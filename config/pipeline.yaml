@@ -1,0 +1,83 @@
+paths:
+  videos: videos
+  models: models
+  raw_data: data/raw
+  processed_data: data/processed
+  artifacts: artifacts
+  reports: reports
+
+video:
+  width: 1920
+  height: 1080
+  fps: 30
+  gop_frames: 30
+  pixel_format: yuv420p
+  colorspace: bt709
+
+yolo:
+  variant: yolov5n
+  weights: models/yolov5n.pt
+  image_size: 640
+  confidence: 0.25
+  iou: 0.45
+  max_detections: 32
+  roi_padding_fraction: 0.05
+  classes:
+    person: 1.0
+    bicycle: 1.0
+    car: 0.8
+    motorcycle: 1.0
+    bus: 0.8
+    truck: 0.8
+    traffic light: 0.7
+    stop sign: 0.7
+
+encoder:
+  codec: libx264
+  bitrates_mbps: [0.5, 1, 1.5, 2, 3, 4, 6, 8]
+  roi_delta_qp: [0, -3, -6, -9]
+  preset: veryfast
+  tune: zerolatency
+  profile: high
+  refs: 1
+  bframes: 0
+  scenecut: 0
+  rc_lookahead: 0
+  vbv_seconds: 3.0
+  vbv_init: 0.5
+  qp_min: 10
+  qp_max: 51
+  filler: false
+  threads: 6
+  sliced_threads: false
+  nal_hrd: vbr
+  force_cfr: true
+
+reward:
+  full_vmaf: 0.45
+  roi_ssim: 0.25
+  bandwidth_violation: 0.20
+  bandwidth_utilization: 0.05
+  action_switch: 0.05
+  bandwidth_epsilon_mbps: 0.05
+  penalty_cap: 4.0
+
+traces:
+  mahimahi_commit: f1346c38c415abfc98626dd82450f49a57033603
+  mahimahi_url: https://github.com/ravinet/mahimahi.git
+  split_seed: 20260923
+
+rl:
+  seeds: [13, 29, 47]
+  steps_per_seed: 300000
+  validation_interval: 5000
+  replay_capacity: 100000
+  batch_size: 64
+  learning_starts: 2000
+  target_sync_interval: 1000
+  learning_rate: 0.001
+  gamma: 0.99
+  epsilon_decay_steps: 50000
+  epsilon_final: 0.05
+  state_clip: 10.0
+  synthetic_block_seconds: 10

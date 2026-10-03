@@ -1,0 +1,10 @@
+.git
+.pytest_cache
+**/__pycache__
+artifacts
+data
+models
+reports
+videos
+*.pyc
+

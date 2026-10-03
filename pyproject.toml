@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vcu-surrogate"
+version = "0.1.0"
+description = "GOP-level YOLO metadata and ROI-aware x264 surrogate dataset pipeline"
+requires-python = ">=3.10,<3.11"
+dependencies = [
+  "GitPython==3.1.43",
+  "gymnasium==0.29.1",
+  "ipython==8.27.0",
+  "numpy==1.26.4",
+  "opencv-python-headless==4.10.0.84",
+  "matplotlib==3.9.2",
+  "pandas==2.2.3",
+  "pyarrow==17.0.0",
+  "Pillow==10.4.0",
+  "psutil==6.1.0",
+  "pytest==8.3.5",
+  "PyYAML==6.0.2",
+  "requests==2.32.3",
+  "scikit-image==0.24.0",
+  "seaborn==0.13.2",
+  "tqdm==4.67.1",
+]
+
+[project.scripts]
+vcu-surrogate = "vcu_surrogate.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
