@@ -89,7 +89,7 @@ def test_dp_oracle_matches_bruteforce_with_switch_cost():
         outcomes.append(pd.DataFrame([dict(action_id=a, bitrate_index=a//4, roi_index=a%4,
                                           actual_bitrate_mbps=.5+a/10, vmaf=float(rng.uniform(20, 90)),
                                           roi_ssim=.8, roi_frame_count=30) for a in range(32)]))
-    previous = outcomes[0].iloc[4]
+    previous = outcomes[0].iloc[4].drop("action_id")
     bw = np.array([1.0, 2.0])
     actions = oracle_actions(outcomes, bw, previous, cfg)
     def score(sequence):

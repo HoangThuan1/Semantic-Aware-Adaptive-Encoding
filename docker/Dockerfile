@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git libgomp1 libx264-163 p7zip-full python3-numpy python3-pandas \
     python3-pip python3-pytest python3-tqdm python3-yaml && \
     rm -rf /var/lib/apt/lists/*
-RUN python3 -m pip install --no-cache-dir gymnasium==0.29.1
+RUN python3 -m pip install --no-cache-dir gymnasium==0.29.1 opencv-python-headless==4.10.0.84
 COPY --from=media-builder /opt/media /opt/media
 ENV PATH=/opt/media/bin:${PATH} LD_LIBRARY_PATH=/opt/media/lib
 WORKDIR /workspace

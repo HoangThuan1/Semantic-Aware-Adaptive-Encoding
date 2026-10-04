@@ -75,7 +75,7 @@ Strategy:
 
 Heuristic chọn bitrate lớn nhất ≤safety×bw estimate; nếu không có mức nào phù hợp, chọn 0.5 Mbps. Harmonic estimate bằng 0 nếu có sample 0. ROI semantic index là tổng ba điều kiện S≥0.25, S≥0.5, S≥0.75. Các ngưỡng định trước, không học từ test.
 
-Các metric: reward/GOP, return, full/region quality, semantic counts/rates, actual bitrate, violation rate, excess Mbit, switch rate và violation ở GOP ngay sau bandwidth giảm hơn 50%. Các metric queue được gắn tên rõ là mô phỏng.
+Các metric: reward/GOP, return, full/region quality, semantic counts/rates, actual bitrate, delivered throughput, capacity utilization/unused capacity của queue, violation rate, excess Mbit, switch rate và violation ở GOP ngay sau bandwidth giảm hơn 50%. Các metric queue được gắn tên rõ là mô phỏng.
 
 Stress suite cho mỗi video: step từ 8→0.6→4 Mbps, outage tại khoảng giữa rồi hồi phục 3 Mbps, dao động 0.5/6 Mbps mỗi 3 giây. Đây là chẩn đoán trên trace synthetic định nghĩa trước, không sử dụng để chọn baseline hoặc checkpoint.
 
@@ -100,3 +100,5 @@ Mô hình không có RTT, loss, socket scheduling, packetization, frame pacing, 
 `manifest.json` ghi hash input/code, FPS sampling, hardware/software và elapsed time. Sidecar từng shard ghi hash reference/encode gián tiếp trong job hash và hash kết quả. Đổi weights, config, reference, detection hoặc code làm cache tính lại. Raw encode/reference được xác minh hash với manifest nguồn khi benchmark chạy.
 
 Bộ benchmark vẫn có giới hạn của dataset nguồn: video dùng chung giữa train/test, semantic của GOP hiện tại nhìn toàn GOP, outcome grid từ action cố định không giữ đúng rate-control khi policy switch, chưa có mạng/VCU thật. Kết quả so sánh là trong phạm vi surrogate này.
+
+Sau chạy, `verification.json` ghi các kiểm tra kết quả và test suite. `manifest.elapsed_s` là thời gian lần gọi hoàn tất cuối cùng, có thể đã dùng cache; tổng thời gian đo các shard được ghi riêng trong verification, không phải tổng thời gian wall-clock của toàn phiên làm việc.

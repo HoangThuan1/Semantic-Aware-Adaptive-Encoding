@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import inspect
 from concurrent.futures import ThreadPoolExecutor
 import math
 import platform
@@ -68,7 +69,8 @@ def measure_grid(config: dict, output: Path, frames_per_gop: int, batch_size: in
     encodes = pd.read_parquet(artifacts / "encodes/manifest.parquet")
     detections_path = artifacts / "metadata/detections.parquet"
     detections = pd.read_parquet(detections_path)
-    source_hash = stable_hash({"implementation": sha256(Path(__file__)),
+    source_hash = stable_hash({"implementation": stable_hash([inspect.getsource(measure_grid), inspect.getsource(_sample_video), inspect.getsource(_save_table), COUNT_COLUMNS]),
+                              "inference_implementation": sha256(Path(__file__).with_name("inference.py")),
                               "metrics_implementation": sha256(Path(__file__).with_name("benchmark_metrics.py")),
                               "detections_sha256": sha256(detections_path), "config": config["_config_sha256"],
                               "frames_per_gop": frames_per_gop, "version": VERSION})
@@ -268,7 +270,7 @@ def oracle_actions(outcomes: list[pd.DataFrame], bandwidth: np.ndarray, previous
         candidates = base[None, :] - switch + value[None, :]
         choices[k] = candidates.argmax(axis=1)
         value = candidates.max(axis=1)
-    prev_action = int(previous.action_id)
+    prev_action = int(previous.bitrate_index)*4 + int(previous.roi_index)
     result = []
     for k in range(n):
         prev_action = int(choices[k, prev_action])
@@ -321,10 +323,17 @@ def evaluate_strategy(dataset: GridDataset, enriched: pd.DataFrame, specs: list[
             frame[field] = values[4:]
         frame["bandwidth_violation"] = frame.actual_bitrate_mbps > frame.bandwidth_mbps
         frame["excess_mbit"] = np.maximum(0, frame.actual_bitrate_mbps-frame.bandwidth_mbps)
-        frame["unused_capacity_mbit"] = np.maximum(0, frame.bandwidth_mbps-frame.actual_bitrate_mbps)
+        previous_backlog = np.r_[0.0, q["backlog_mbit"][:-1]]
+        delivered = np.asarray(payloads) + previous_backlog - q["backlog_mbit"]
+        if (delivered < -1e-8).any() or (delivered > bw+1e-8).any():
+            raise RuntimeError("fluid service violates bandwidth bound")
+        if not np.isclose(np.sum(payloads), delivered.sum()+q["backlog_mbit"][-1]):
+            raise RuntimeError("fluid queue payload conservation failed")
+        frame["served_mbit"] = np.maximum(0.0, delivered[4:])
+        frame["unused_capacity_mbit"] = np.maximum(0.0, frame.bandwidth_mbps-frame.served_mbit)
         frame["post_drop"] = bw[4:] < 0.5*bw[3:-1]
         fields = ["vmaf", "roi_ssim", *QUALITY_COLUMNS, "actual_bitrate_mbps", "bandwidth_violation",
-                  "excess_mbit", "backlog_mbit", "queue_area_mbit_s", "deadline_miss", "uncompleted"]
+                  "excess_mbit", "served_mbit", "unused_capacity_mbit", "backlog_mbit", "queue_area_mbit_s", "deadline_miss", "uncompleted"]
         summary = {"strategy": name, "split": spec["split"], "video_id": video_id, "trace_id": trace_id,
                    "trace_start": offset, "gops": len(frame), "return": float(frame.reward.sum()),
                    "reward_per_gop": float(frame.reward.mean()),
@@ -368,6 +377,9 @@ def summarize_policies(episodes: pd.DataFrame, rollouts: pd.DataFrame, output: P
                   "p95_completed_latency_s": float(frame.completion_latency_s.quantile(.95)),
                   "mean_backlog_mbit": float(frame.backlog_mbit.mean()),
                   "excess_mbit_total": float(frame.excess_mbit.sum()),
+                  "delivered_throughput_mbps": float(frame.served_mbit.mean()),
+                  "unused_capacity_mbit_total": float(frame.unused_capacity_mbit.sum()),
+                  "capacity_utilization_fraction": float(frame.served_mbit.sum()/frame.bandwidth_mbps.sum()) if frame.bandwidth_mbps.sum() > 0 else np.nan,
                   "post_drop_violation_rate": float(frame.loc[frame.post_drop, "bandwidth_violation"].mean())}
         record.update({c: float(frame[c].sum()) for c in COUNT_COLUMNS})
         # Cluster by video; same content and correlated trace windows make GOP iid CIs misleading.
@@ -513,6 +525,7 @@ def plots_and_report(output: Path, curves: pd.DataFrame, summary: pd.DataFrame, 
               "- Rate-distortion dùng bitrate thực. Matched-quality saving nội suy tuyến tính trên Pareto front trong miền chất lượng giao nhau, không ngoại suy và không gọi là BD-rate. Giá trị dương là tiết kiệm, âm là tốn thêm bit.",
               "- Fixed/heuristic tốt nhất được chọn chỉ bằng validation return, không bằng test. Oracle DP biết trước toàn trace và outcome, tối đa hóa tổng reward không discount; là trần reward trong grid, không phải thuật toán triển khai.",
               "- Mọi strategy dùng warm-up action 4 trong 4 GOP. Quality/return bỏ warm-up, nhưng backlog của warm-up được giữ khi mô phỏng hàng đợi.",
+              "- Quality là chất lượng video đã encode, bao gồm cả GOP trễ hoặc chưa truyền xong; không phải chất lượng thực tế viewer nhận được qua mạng. Delivered throughput/utilization chỉ là service của mô hình queue.",
               "- Queue là FIFO không giới hạn, payload cả GOP đến đầu giây, link phục vụ đều trong giây; không RTT, loss, overhead hay pacing encoder. Deadline 1 giây. Uncompleted là chưa truyền xong khi trace episode kết thúc; latency của chúng bị censor, p95 chỉ trên GOP hoàn tất.",
               "- Bootstrap ghép cặp theo episode rồi gom theo video, 2.000 bootstrap với seed cố định. Chỉ có 5 video cluster, trace windows giữa video có thể tương quan; CI mô tả biến thiên nội dung trong dataset này, không chứng minh tổng quát hóa LTE.",
               "- Grid encode action cố định còn domain gap với encode liên tục khi chuyển action. Semantic S[k] cần toàn GOP như pipeline gốc. Video train/test dùng chung; chưa có kiểm chứng VCU hoặc mạng thật.",
@@ -553,7 +566,7 @@ def run_benchmark(config: dict, frames_per_gop: int = 3, batch_size: int = 8) ->
                 "grid_rows": len(grid), "sample_frames": len(samples), "frame_offsets": frame_offsets(frames_per_gop).tolist()}
     plots_and_report(output, curves, summary, coverage)
     import torch
-    inputs = [Path(config["_config_path"]), project_path(config, "artifacts") / "metrics/gop_action_grid.parquet",
+    inputs = [ROOT / config["yolo"]["weights"], Path(config["_config_path"]), project_path(config, "artifacts") / "metrics/gop_action_grid.parquet",
               project_path(config, "artifacts") / "metadata/detections.parquet",
               project_path(config, "artifacts") / "metadata/gop_semantics.parquet",
               project_path(config, "artifacts") / "encodes/manifest.parquet",
