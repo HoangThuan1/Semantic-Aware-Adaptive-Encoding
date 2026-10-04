@@ -1,0 +1,52 @@
+{
+  "batch_size": 8,
+  "benchmark_version": 1,
+  "bootstrap_replicates": 2000,
+  "bootstrap_seed": 20261004,
+  "code_sha256": {
+    "src/vcu_surrogate/benchmark.py": "200315f8ed2fe4f98ab327ba78e34cdb08a1af522c59836ef739cdb2b6fc78ce",
+    "src/vcu_surrogate/benchmark_metrics.py": "62d00e8722a2dca8c59b7b567369d8f39a55d4cf9cdc39e4163a82cdad730572",
+    "src/vcu_surrogate/policy_numpy.py": "4178eedb2dcf22b098f2e8f780992196fe81318b76882aba15d5cc00e486d416",
+    "src/vcu_surrogate/rl_env.py": "e7e8ea2d064aa96bfa71ac41cbc6407ed145d89680c21ba0892da12f05b75cc3"
+  },
+  "coverage": {
+    "frame_offsets": [
+      0,
+      14,
+      29
+    ],
+    "gops": 294,
+    "grid_rows": 9408,
+    "sample_frames": 28224,
+    "videos": 5
+  },
+  "elapsed_s": 328.18661966999935,
+  "frames_per_gop": 3,
+  "gpu": "Quadro T1000",
+  "input_sha256": {
+    "artifacts/encodes/manifest.parquet": "8fab13c0a2e6a5aba7cf0e397a44e89da235eb1ad2a83e4d8290a03d4928fa8d",
+    "artifacts/metadata/detections.parquet": "5912a78391e7e36797d10cef494c2c6c7b7584900b06c2e245eed76f6ee7cd88",
+    "artifacts/metadata/gop_semantics.parquet": "34723a95f5f4ee906d3450b8109e015d84bb7ecc8b62a8c792c32c02c5b702d0",
+    "artifacts/metrics/gop_action_grid.parquet": "121f2f90f563682619dcedc1a5ab96a1de8614bfeae92cdfdfb53ad0ff5b7ecf",
+    "artifacts/reference/manifest.parquet": "b5d3384ccd525e313b0f6a8956ea4c5453978a36fb1ef407ffa0cb3ff25fcb3d",
+    "artifacts/rl/ddqn_seed_13.npz": "d7029b308bd8e0bebcfaad1a53225bcd795ab01b1c123aa00bbff8df7f6becb8",
+    "artifacts/rl/ddqn_seed_29.npz": "853c32a29f301c8269e5d64b3304b60f5754d7325c84a0883bbfdf3f51b81526",
+    "artifacts/rl/ddqn_seed_47.npz": "13accfc1cb7611b316772e51bf317010690b7ee5c02ab7c08434be72411a948d",
+    "artifacts/rl/ddqn_selected.npz": "d7029b308bd8e0bebcfaad1a53225bcd795ab01b1c123aa00bbff8df7f6becb8",
+    "config/pipeline.yaml": "0e9b6b202f87a66311c601824f22a96c6ddf4e27376774f6cefaed693ecbe1b1",
+    "data/processed/bandwidth_traces.parquet": "d9fcfd59d7ec54585d78a596de14e70f10543cd434be834ac8b67613ea17a209",
+    "data/processed/trace_catalog.parquet": "72f1a49c17746c993ae545da0122b042f42cd57f401079ce242012e08a0cbad5",
+    "models/yolov5n.pt": "4f180cf23ba0717ada0badd6c685026d73d48f184d00fc159c2641284b2ac0a3",
+    "reports/rl/training_summary.json": "f3ae235416c833aa116f3f24e607872ba8900dbd3afa44f7b2424f570e583e43"
+  },
+  "limits": [
+    "sampled extra frame metrics",
+    "reference detector pseudo labels",
+    "shared videos across splits",
+    "fixed-action encode surrogate",
+    "fluid queue simulation; no real network/VCU measurement"
+  ],
+  "python": "3.10.14",
+  "status": "complete",
+  "torch": "2.2.2"
+}

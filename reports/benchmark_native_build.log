@@ -1,0 +1,85 @@
+docker build --target pipeline-test -f docker/Dockerfile -t vcu-pipeline-test:0.1.0 .
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  285.2kB
+Step 1/20 : FROM ubuntu:22.04 AS media-builder
+ ---> bf7f4568d957
+Step 2/20 : ARG DEBIAN_FRONTEND=noninteractive
+ ---> Using cache
+ ---> 87e46057f5c5
+Step 3/20 : ARG VMAF_REF=v3.0.0
+ ---> Using cache
+ ---> e800a36738cb
+Step 4/20 : ARG FFMPEG_REF=n6.1.1
+ ---> Using cache
+ ---> 239c1ce8bec5
+Step 5/20 : RUN apt-get update && apt-get install -y --no-install-recommends     build-essential ca-certificates git libx264-dev meson nasm ninja-build pkg-config python3 xxd &&     rm -rf /var/lib/apt/lists/*
+ ---> Using cache
+ ---> 49af6815e232
+Step 6/20 : RUN git clone --depth 1 --branch "${VMAF_REF}" https://github.com/Netflix/vmaf.git /tmp/vmaf &&     meson setup /tmp/vmaf/libvmaf/build /tmp/vmaf/libvmaf       --prefix=/opt/media --libdir=lib --buildtype=release       -Denable_tests=false -Denable_docs=false -Dbuilt_in_models=true &&     meson compile -C /tmp/vmaf/libvmaf/build &&     meson install -C /tmp/vmaf/libvmaf/build
+ ---> Using cache
+ ---> 033cf844e548
+Step 7/20 : RUN git clone --depth 1 --branch "${FFMPEG_REF}" https://github.com/FFmpeg/FFmpeg.git /tmp/ffmpeg &&     cd /tmp/ffmpeg &&     PKG_CONFIG_PATH=/opt/media/lib/pkgconfig ./configure       --prefix=/opt/media --libdir=/opt/media/lib --shlibdir=/opt/media/lib       --enable-shared --disable-static --enable-gpl --enable-libx264 --enable-libvmaf       --disable-debug --disable-doc --disable-ffplay       --extra-cflags=-I/opt/media/include       --extra-ldflags='-L/opt/media/lib -Wl,-rpath,/opt/media/lib' &&     make -j"$(nproc)" && make install
+ ---> Using cache
+ ---> c98e78505b21
+Step 8/20 : COPY cpp /tmp/cpp
+ ---> Using cache
+ ---> d1c9783d532d
+Step 9/20 : RUN PKG_CONFIG_PATH=/opt/media/lib/pkgconfig g++ -O3 -std=c++17 /tmp/cpp/roi_encoder.cpp       -o /opt/media/bin/roi_encoder       $(PKG_CONFIG_PATH=/opt/media/lib/pkgconfig pkg-config --cflags --libs libavformat libavcodec libavutil libswscale)       -Wl,-rpath,/opt/media/lib
+ ---> Using cache
+ ---> d84c8a09a555
+Step 10/20 : FROM ubuntu:22.04 AS pipeline-test
+ ---> bf7f4568d957
+Step 11/20 : ARG DEBIAN_FRONTEND=noninteractive
+ ---> Using cache
+ ---> 87e46057f5c5
+Step 12/20 : RUN apt-get update && apt-get install -y --no-install-recommends     git libgomp1 libx264-163 p7zip-full python3-numpy python3-pandas     python3-pip python3-pytest python3-tqdm python3-yaml &&     rm -rf /var/lib/apt/lists/*
+ ---> Using cache
+ ---> ed2e50627e56
+Step 13/20 : RUN python3 -m pip install --no-cache-dir gymnasium==0.29.1 opencv-python-headless==4.10.0.84
+ ---> Running in 05a229955bb4
+Collecting gymnasium==0.29.1
+  Downloading gymnasium-0.29.1-py3-none-any.whl (953 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 953.9/953.9 KB 568.3 kB/s eta 0:00:00
+Collecting opencv-python-headless==4.10.0.84
+  Downloading opencv_python_headless-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (49.9 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 49.9/49.9 MB 3.7 MB/s eta 0:00:00
+Requirement already satisfied: numpy>=1.21.0 in /usr/lib/python3/dist-packages (from gymnasium==0.29.1) (1.21.5)
+Collecting typing-extensions>=4.3.0
+  Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 45.6/45.6 KB 11.0 MB/s eta 0:00:00
+Collecting cloudpickle>=1.2.0
+  Downloading cloudpickle-3.1.2-py3-none-any.whl (22 kB)
+Collecting farama-notifications>=0.0.1
+  Downloading farama_notifications-0.0.6-py3-none-any.whl (2.9 kB)
+Installing collected packages: farama-notifications, typing-extensions, opencv-python-headless, cloudpickle, gymnasium
+Successfully installed cloudpickle-3.1.2 farama-notifications-0.0.6 gymnasium-0.29.1 opencv-python-headless-4.10.0.84 typing-extensions-4.16.0
+[91mWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+[0m ---> Removed intermediate container 05a229955bb4
+ ---> bb9549e43fbd
+Step 14/20 : COPY --from=media-builder /opt/media /opt/media
+ ---> 5e0140909337
+Step 15/20 : ENV PATH=/opt/media/bin:${PATH} LD_LIBRARY_PATH=/opt/media/lib
+ ---> Running in 5aecb838b3e5
+ ---> Removed intermediate container 5aecb838b3e5
+ ---> 7567d141c716
+Step 16/20 : WORKDIR /workspace
+ ---> Running in 442404a3f03c
+ ---> Removed intermediate container 442404a3f03c
+ ---> 9924957c9935
+Step 17/20 : COPY pyproject.toml README.md ./
+ ---> 96b97fa1bdc0
+Step 18/20 : COPY src src
+ ---> f22ade94e064
+Step 19/20 : COPY tests tests
+ ---> a2f2ed64608f
+Step 20/20 : RUN ffmpeg -hide_banner -filters 2>&1 | grep -q libvmaf &&     PYTHONPATH=/workspace/src python3 -m pytest tests
+ ---> Running in 3da9da6f62a9
+.......s..........                                                       [100%]
+17 passed, 3 skipped in 14.90s
+ ---> Removed intermediate container 3da9da6f62a9
+ ---> 49a632d586e3
+Successfully built 49a632d586e3
+Successfully tagged vcu-pipeline-test:0.1.0

@@ -2,7 +2,6 @@ artifacts/
 data/raw/
 data/processed/
 models/*.pt
-reports/
 __pycache__/
 *.py[cod]
 .pytest_cache/

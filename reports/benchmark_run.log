@@ -1,0 +1,210 @@
++ git -C /opt/yolov5 rev-parse HEAD
++ ffmpeg -hide_banner -encoders
++ ffmpeg -hide_banner -filters
++ ffmpeg -version
++ vmaf --version
+CUDA device: Quadro T1000
+Preflight passed: Docker, CUDA, libx264, libvmaf, roi_encoder
++ git -C /workspace/data/raw/mahimahi rev-parse HEAD
++ git -C /workspace/data/raw/mahimahi rev-parse HEAD
+benchmark cached 1/160 DowntownDrive_dashcam action=0
+benchmark cached 2/160 DowntownDrive_dashcam action=1
+benchmark cached 3/160 DowntownDrive_dashcam action=2
+benchmark cached 4/160 DowntownDrive_dashcam action=3
+benchmark cached 5/160 DowntownDrive_dashcam action=4
+benchmark cached 6/160 DowntownDrive_dashcam action=5
+benchmark cached 7/160 DowntownDrive_dashcam action=6
+benchmark cached 8/160 DowntownDrive_dashcam action=7
+benchmark cached 9/160 DowntownDrive_dashcam action=8
+benchmark cached 10/160 DowntownDrive_dashcam action=9
+benchmark cached 11/160 DowntownDrive_dashcam action=10
+benchmark cached 12/160 DowntownDrive_dashcam action=11
+benchmark cached 13/160 DowntownDrive_dashcam action=12
+benchmark cached 14/160 DowntownDrive_dashcam action=13
+benchmark cached 15/160 DowntownDrive_dashcam action=14
+benchmark cached 16/160 DowntownDrive_dashcam action=15
+benchmark cached 17/160 DowntownDrive_dashcam action=16
+benchmark cached 18/160 DowntownDrive_dashcam action=17
+benchmark cached 19/160 DowntownDrive_dashcam action=18
+benchmark cached 20/160 DowntownDrive_dashcam action=19
+benchmark cached 21/160 DowntownDrive_dashcam action=20
+benchmark cached 22/160 DowntownDrive_dashcam action=21
+benchmark cached 23/160 DowntownDrive_dashcam action=22
+benchmark cached 24/160 DowntownDrive_dashcam action=23
+benchmark cached 25/160 DowntownDrive_dashcam action=24
+benchmark cached 26/160 DowntownDrive_dashcam action=25
+benchmark cached 27/160 DowntownDrive_dashcam action=26
+benchmark cached 28/160 DowntownDrive_dashcam action=27
+benchmark cached 29/160 DowntownDrive_dashcam action=28
+benchmark cached 30/160 DowntownDrive_dashcam action=29
+benchmark cached 31/160 DowntownDrive_dashcam action=30
+benchmark cached 32/160 DowntownDrive_dashcam action=31
+benchmark cached 33/160 Highspeed_dashcam action=0
+benchmark cached 34/160 Highspeed_dashcam action=1
+benchmark cached 35/160 Highspeed_dashcam action=2
+benchmark cached 36/160 Highspeed_dashcam action=3
+benchmark cached 37/160 Highspeed_dashcam action=4
+benchmark cached 38/160 Highspeed_dashcam action=5
+benchmark cached 39/160 Highspeed_dashcam action=6
+benchmark cached 40/160 Highspeed_dashcam action=7
+benchmark cached 41/160 Highspeed_dashcam action=8
+benchmark cached 42/160 Highspeed_dashcam action=9
+benchmark cached 43/160 Highspeed_dashcam action=10
+benchmark cached 44/160 Highspeed_dashcam action=11
+benchmark cached 45/160 Highspeed_dashcam action=12
+benchmark cached 46/160 Highspeed_dashcam action=13
+benchmark cached 47/160 Highspeed_dashcam action=14
+benchmark cached 48/160 Highspeed_dashcam action=15
+benchmark cached 49/160 Highspeed_dashcam action=16
+benchmark cached 50/160 Highspeed_dashcam action=17
+benchmark cached 51/160 Highspeed_dashcam action=18
+benchmark cached 52/160 Highspeed_dashcam action=19
+benchmark cached 53/160 Highspeed_dashcam action=20
+benchmark cached 54/160 Highspeed_dashcam action=21
+benchmark cached 55/160 Highspeed_dashcam action=22
+benchmark cached 56/160 Highspeed_dashcam action=23
+benchmark cached 57/160 Highspeed_dashcam action=24
+benchmark cached 58/160 Highspeed_dashcam action=25
+benchmark cached 59/160 Highspeed_dashcam action=26
+benchmark cached 60/160 Highspeed_dashcam action=27
+benchmark cached 61/160 Highspeed_dashcam action=28
+benchmark cached 62/160 Highspeed_dashcam action=29
+benchmark cached 63/160 Highspeed_dashcam action=30
+benchmark cached 64/160 Highspeed_dashcam action=31
+benchmark cached 65/160 NightDrive_dashcam action=0
+benchmark cached 66/160 NightDrive_dashcam action=1
+benchmark cached 67/160 NightDrive_dashcam action=2
+benchmark cached 68/160 NightDrive_dashcam action=3
+benchmark cached 69/160 NightDrive_dashcam action=4
+benchmark cached 70/160 NightDrive_dashcam action=5
+benchmark cached 71/160 NightDrive_dashcam action=6
+benchmark cached 72/160 NightDrive_dashcam action=7
+benchmark cached 73/160 NightDrive_dashcam action=8
+benchmark cached 74/160 NightDrive_dashcam action=9
+benchmark cached 75/160 NightDrive_dashcam action=10
+benchmark cached 76/160 NightDrive_dashcam action=11
+benchmark cached 77/160 NightDrive_dashcam action=12
+benchmark cached 78/160 NightDrive_dashcam action=13
+benchmark cached 79/160 NightDrive_dashcam action=14
+benchmark cached 80/160 NightDrive_dashcam action=15
+benchmark cached 81/160 NightDrive_dashcam action=16
+benchmark cached 82/160 NightDrive_dashcam action=17
+benchmark cached 83/160 NightDrive_dashcam action=18
+benchmark cached 84/160 NightDrive_dashcam action=19
+benchmark cached 85/160 NightDrive_dashcam action=20
+benchmark cached 86/160 NightDrive_dashcam action=21
+benchmark cached 87/160 NightDrive_dashcam action=22
+benchmark cached 88/160 NightDrive_dashcam action=23
+benchmark cached 89/160 NightDrive_dashcam action=24
+benchmark cached 90/160 NightDrive_dashcam action=25
+benchmark cached 91/160 NightDrive_dashcam action=26
+benchmark cached 92/160 NightDrive_dashcam action=27
+benchmark cached 93/160 NightDrive_dashcam action=28
+benchmark cached 94/160 NightDrive_dashcam action=29
+benchmark cached 95/160 NightDrive_dashcam action=30
+benchmark cached 96/160 NightDrive_dashcam action=31
+benchmark cached 97/160 RainyDrive_dashcam action=0
+benchmark cached 98/160 RainyDrive_dashcam action=1
+benchmark cached 99/160 RainyDrive_dashcam action=2
+benchmark cached 100/160 RainyDrive_dashcam action=3
+benchmark cached 101/160 RainyDrive_dashcam action=4
+benchmark cached 102/160 RainyDrive_dashcam action=5
+benchmark cached 103/160 RainyDrive_dashcam action=6
+benchmark cached 104/160 RainyDrive_dashcam action=7
+benchmark cached 105/160 RainyDrive_dashcam action=8
+benchmark cached 106/160 RainyDrive_dashcam action=9
+benchmark cached 107/160 RainyDrive_dashcam action=10
+benchmark cached 108/160 RainyDrive_dashcam action=11
+benchmark cached 109/160 RainyDrive_dashcam action=12
+benchmark cached 110/160 RainyDrive_dashcam action=13
+benchmark cached 111/160 RainyDrive_dashcam action=14
+benchmark cached 112/160 RainyDrive_dashcam action=15
+benchmark cached 113/160 RainyDrive_dashcam action=16
+benchmark cached 114/160 RainyDrive_dashcam action=17
+benchmark cached 115/160 RainyDrive_dashcam action=18
+benchmark cached 116/160 RainyDrive_dashcam action=19
+benchmark cached 117/160 RainyDrive_dashcam action=20
+benchmark cached 118/160 RainyDrive_dashcam action=21
+benchmark cached 119/160 RainyDrive_dashcam action=22
+benchmark cached 120/160 RainyDrive_dashcam action=23
+benchmark cached 121/160 RainyDrive_dashcam action=24
+benchmark cached 122/160 RainyDrive_dashcam action=25
+benchmark cached 123/160 RainyDrive_dashcam action=26
+benchmark cached 124/160 RainyDrive_dashcam action=27
+benchmark cached 125/160 RainyDrive_dashcam action=28
+benchmark cached 126/160 RainyDrive_dashcam action=29
+benchmark cached 127/160 RainyDrive_dashcam action=30
+benchmark cached 128/160 RainyDrive_dashcam action=31
+benchmark cached 129/160 Sample_Video1 action=0
+benchmark cached 130/160 Sample_Video1 action=1
+benchmark cached 131/160 Sample_Video1 action=2
+benchmark cached 132/160 Sample_Video1 action=3
+benchmark cached 133/160 Sample_Video1 action=4
+benchmark cached 134/160 Sample_Video1 action=5
+benchmark cached 135/160 Sample_Video1 action=6
+benchmark cached 136/160 Sample_Video1 action=7
+benchmark cached 137/160 Sample_Video1 action=8
+benchmark cached 138/160 Sample_Video1 action=9
+benchmark cached 139/160 Sample_Video1 action=10
+benchmark cached 140/160 Sample_Video1 action=11
+benchmark cached 141/160 Sample_Video1 action=12
+benchmark cached 142/160 Sample_Video1 action=13
+benchmark cached 143/160 Sample_Video1 action=14
+benchmark cached 144/160 Sample_Video1 action=15
+benchmark cached 145/160 Sample_Video1 action=16
+benchmark cached 146/160 Sample_Video1 action=17
+benchmark cached 147/160 Sample_Video1 action=18
+benchmark cached 148/160 Sample_Video1 action=19
+benchmark cached 149/160 Sample_Video1 action=20
+benchmark cached 150/160 Sample_Video1 action=21
+benchmark cached 151/160 Sample_Video1 action=22
+benchmark cached 152/160 Sample_Video1 action=23
+benchmark cached 153/160 Sample_Video1 action=24
+benchmark cached 154/160 Sample_Video1 action=25
+benchmark cached 155/160 Sample_Video1 action=26
+benchmark cached 156/160 Sample_Video1 action=27
+benchmark cached 157/160 Sample_Video1 action=28
+benchmark cached 158/160 Sample_Video1 action=29
+benchmark cached 159/160 Sample_Video1 action=30
+benchmark cached 160/160 Sample_Video1 action=31
+benchmark policies 1/41 fixed_action_00
+benchmark policies 2/41 fixed_action_01
+benchmark policies 3/41 fixed_action_02
+benchmark policies 4/41 fixed_action_03
+benchmark policies 5/41 fixed_action_04
+benchmark policies 6/41 fixed_action_05
+benchmark policies 7/41 fixed_action_06
+benchmark policies 8/41 fixed_action_07
+benchmark policies 9/41 fixed_action_08
+benchmark policies 10/41 fixed_action_09
+benchmark policies 11/41 fixed_action_10
+benchmark policies 12/41 fixed_action_11
+benchmark policies 13/41 fixed_action_12
+benchmark policies 14/41 fixed_action_13
+benchmark policies 15/41 fixed_action_14
+benchmark policies 16/41 fixed_action_15
+benchmark policies 17/41 fixed_action_16
+benchmark policies 18/41 fixed_action_17
+benchmark policies 19/41 fixed_action_18
+benchmark policies 20/41 fixed_action_19
+benchmark policies 21/41 fixed_action_20
+benchmark policies 22/41 fixed_action_21
+benchmark policies 23/41 fixed_action_22
+benchmark policies 24/41 fixed_action_23
+benchmark policies 25/41 fixed_action_24
+benchmark policies 26/41 fixed_action_25
+benchmark policies 27/41 fixed_action_26
+benchmark policies 28/41 fixed_action_27
+benchmark policies 29/41 fixed_action_28
+benchmark policies 30/41 fixed_action_29
+benchmark policies 31/41 fixed_action_30
+benchmark policies 32/41 fixed_action_31
+benchmark policies 33/41 ddqn_seed_13
+benchmark policies 34/41 ddqn_seed_29
+benchmark policies 35/41 ddqn_seed_47
+benchmark policies 36/41 ddqn_selected
+benchmark policies 37/41 fixed_validation_selected
+benchmark policies 38/41 heuristic_validation_selected
+benchmark policies 39/41 causal_harmonic_roi0
+benchmark policies 40/41 causal_harmonic_roisemantic
+Benchmark complete: /workspace/reports/benchmark/REPORT.md (328.2s)

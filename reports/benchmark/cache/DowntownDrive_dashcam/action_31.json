@@ -1,0 +1,12 @@
+{
+  "cache_key_migration": {
+    "old_job_hash": "ae683338fe32a873181120f530900b90a871085dd49ebf812e6d2141b5a24a9a",
+    "old_module_sha256": "f8a36c9ac677a1d178e9c5a37e6f45397300e90c9e2d74b34cc8509f8cf176b5",
+    "reason": "Measurement function AST unchanged excluding cache-key assignment; policy oracle fix only."
+  },
+  "classes_sha256": "6fd100d1c7427ba22be97c43bb2102103d1ca301773d5dfc6c19084484ebf5f1",
+  "elapsed_s": 14.951437908996013,
+  "job_hash": "ef056b6ff8df2d6ecb6141a580aca140edbc1282d4b1556c68ead5d4887998a4",
+  "output_sha256": "593ddb6892ac6742f16b6bc78d9eb748d41a58055b368399ee32346b06585bab",
+  "sample_frames": 150
+}
