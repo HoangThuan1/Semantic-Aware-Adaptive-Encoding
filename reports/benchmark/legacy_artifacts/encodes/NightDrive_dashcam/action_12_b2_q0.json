@@ -1,0 +1,46 @@
+{
+  "action_id": 12,
+  "bitrate_mbps": 2.0,
+  "delta_qp": 0,
+  "encoder": {
+    "bframes": 0,
+    "bitrates_mbps": [
+      0.5,
+      1,
+      1.5,
+      2,
+      3,
+      4,
+      6,
+      8
+    ],
+    "codec": "libx264",
+    "filler": false,
+    "force_cfr": true,
+    "nal_hrd": "vbr",
+    "preset": "veryfast",
+    "profile": "high",
+    "qp_max": 51,
+    "qp_min": 10,
+    "rc_lookahead": 0,
+    "refs": 1,
+    "roi_delta_qp": [
+      0,
+      -3,
+      -6,
+      -9
+    ],
+    "scenecut": 0,
+    "sliced_threads": false,
+    "threads": 6,
+    "tune": "zerolatency",
+    "vbv_init": 0.5,
+    "vbv_seconds": 3.0
+  },
+  "gop_frames": 30,
+  "job_hash": "e3ce5bdd5343134aced93f3913cba84a5402fa12e45695620b5a5d48237dbef6",
+  "output_sha256": "fca5b188840812213174128b2d520d11243c98a2c93a5b6010be351614e3df8e",
+  "reference_sha256": "f96f90be3074fad838bddf028693cff11ade4b080219308c11978ac6a676f934",
+  "roi_sha256": "1a0bf8bc393d93db92ab49ee8b76eb75da5b9925030e825427de5c72b3524ef5",
+  "video_id": "NightDrive_dashcam"
+}

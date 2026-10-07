@@ -1,0 +1,15 @@
+{
+  "job_hash": "3c9a382c73d6e46ac8289b0abcf69a0a958d878c7903182bcda55f1b0e980af7",
+  "keep_frames": 3630,
+  "output_sha256": "f96f90be3074fad838bddf028693cff11ade4b080219308c11978ac6a676f934",
+  "source": "videos/NightDrive_dashcam.mp4",
+  "source_sha256": "3887a079f9f86947fc810f7684668809775187dac9cf03be9e47dca5f12497b8",
+  "video": {
+    "colorspace": "bt709",
+    "fps": 30,
+    "gop_frames": 30,
+    "height": 1080,
+    "pixel_format": "yuv420p",
+    "width": 1920
+  }
+}

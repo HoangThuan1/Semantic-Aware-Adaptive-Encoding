@@ -1,0 +1,46 @@
+{
+  "action_id": 9,
+  "bitrate_mbps": 1.5,
+  "delta_qp": -3,
+  "encoder": {
+    "bframes": 0,
+    "bitrates_mbps": [
+      0.5,
+      1,
+      1.5,
+      2,
+      3,
+      4,
+      6,
+      8
+    ],
+    "codec": "libx264",
+    "filler": false,
+    "force_cfr": true,
+    "nal_hrd": "vbr",
+    "preset": "veryfast",
+    "profile": "high",
+    "qp_max": 51,
+    "qp_min": 10,
+    "rc_lookahead": 0,
+    "refs": 1,
+    "roi_delta_qp": [
+      0,
+      -3,
+      -6,
+      -9
+    ],
+    "scenecut": 0,
+    "sliced_threads": false,
+    "threads": 6,
+    "tune": "zerolatency",
+    "vbv_init": 0.5,
+    "vbv_seconds": 3.0
+  },
+  "gop_frames": 30,
+  "job_hash": "bf2d6eeffe2fd49c4ae5b2b3dc201e205e63aed4e3ac37b951da3ac3c3c35c28",
+  "output_sha256": "5f2681338fd969367cdbfe020736d04cf92db74cd138c7dbe17d0d6e79bf7075",
+  "reference_sha256": "319030ad0dfa0452fb43a788e3920649e0bf68f6fca31bde3695c52f4055c83f",
+  "roi_sha256": "d488d47f76f98a7bf5cf72fdf0c2fba1212c70ea1adfd8289b00bfd09e39c4b4",
+  "video_id": "Highspeed_dashcam"
+}

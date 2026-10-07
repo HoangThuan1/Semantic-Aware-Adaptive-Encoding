@@ -1,0 +1,113 @@
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/DowntownDrive_dashcam.mp4
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/Highspeed_dashcam.mp4
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/NightDrive_dashcam.mp4
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/RainyDrive_dashcam.mp4
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/Sample_Video1.mp4
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/01746216-8d8edd01.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/08227ff8-582c6d01.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/0840d2ca-449c737e.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/114af10f-c3d93b85.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/16dce9f0-a914a65e.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/23f196ea-6695b9c9.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/25504afa-1c7a1175.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/2880b229-d27d5285.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/28d8a35e-0fb6220b.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/2ce5e0fc-1772f36a.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/32bfe901-8d7d316a.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/3311620c-6ce84fba.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/33bd5349-0b6596cd.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/359ce11c-e2f58b33.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/365d8cb3-f9a75314.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/36c0407b-a82790f0.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/414b18d6-5ba4ad87.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/475a4732-7fd6ed1d.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/496ee26b-1667add1.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/4a90bd59-a58ad37d.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/4e9647dc-4eb8944e.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/4e99efd9-6a718a87.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/5370d7b1-ea9f415f.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/56188d0a-cf1024ed.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/5657e0fa-b0f3b542.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/598a3503-81a87096.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/5de6701c-45b9c811.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/601aa3d0-c29b3262.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/6b1f5022-48037f59.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/6c273a00-643599de.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/727488c2-8a63df5c.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/7524f64f-4482f162.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/793b6756-ef820bf7.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/83d632ca-d1a0fb0e.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/881a4fa1-30d35cf2.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/8ac5ec86-4f2d230e.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/8b968c79-82942df8.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/8cb281a4-b7ad4e5f.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/8e803264-d6ec9f71.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/90ab93a3-25fede67.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/91104422-94debf20.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/92845c7c-d5a8970d.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/9542db5e-c825c091.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/97f4494c-f381f531.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/987dd552-b5f04445.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/9c59583c-bb673bf1.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/9f885317-207ffc3c.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/a273bf34-8f8199ca.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/afdefbf2-fd0505fa.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/b00ae1f9-b6c6d12d.mov
++ ffprobe -v error -select_streams v:0 -show_entries format=duration -of json /workspace/videos/bdd100k/b1357bde-525ed0d7.mov
+Reused verified preparation 1/56 DowntownDrive_dashcam
+Reused verified preparation 2/56 Highspeed_dashcam
+Reused verified preparation 3/56 NightDrive_dashcam
+Reused verified preparation 4/56 RainyDrive_dashcam
+Reused verified preparation 5/56 Sample_Video1
+Reused verified preparation 6/56 bdd_01746216-8d8edd01
+Reused verified preparation 7/56 bdd_08227ff8-582c6d01
+Reused verified preparation 8/56 bdd_0840d2ca-449c737e
+Reused verified preparation 9/56 bdd_114af10f-c3d93b85
+Reused verified preparation 10/56 bdd_16dce9f0-a914a65e
+Reused verified preparation 11/56 bdd_23f196ea-6695b9c9
+Reused verified preparation 12/56 bdd_25504afa-1c7a1175
+Reused verified preparation 13/56 bdd_2880b229-d27d5285
+Reused verified preparation 14/56 bdd_28d8a35e-0fb6220b
+Reused verified preparation 15/56 bdd_2ce5e0fc-1772f36a
+Reused verified preparation 16/56 bdd_32bfe901-8d7d316a
+Reused verified preparation 17/56 bdd_3311620c-6ce84fba
+Reused verified preparation 18/56 bdd_33bd5349-0b6596cd
+Reused verified preparation 19/56 bdd_359ce11c-e2f58b33
+Reused verified preparation 20/56 bdd_365d8cb3-f9a75314
+Reused verified preparation 21/56 bdd_36c0407b-a82790f0
+Reused verified preparation 22/56 bdd_414b18d6-5ba4ad87
+Reused verified preparation 23/56 bdd_475a4732-7fd6ed1d
+Reused verified preparation 24/56 bdd_496ee26b-1667add1
+Reused verified preparation 25/56 bdd_4a90bd59-a58ad37d
+Reused verified preparation 26/56 bdd_4e9647dc-4eb8944e
+Reused verified preparation 27/56 bdd_4e99efd9-6a718a87
+Reused verified preparation 28/56 bdd_5370d7b1-ea9f415f
+Reused verified preparation 29/56 bdd_56188d0a-cf1024ed
+Reused verified preparation 30/56 bdd_5657e0fa-b0f3b542
+Reused verified preparation 31/56 bdd_598a3503-81a87096
+Reused verified preparation 32/56 bdd_5de6701c-45b9c811
+Reused verified preparation 33/56 bdd_601aa3d0-c29b3262
+Reused verified preparation 34/56 bdd_6b1f5022-48037f59
+Reused verified preparation 35/56 bdd_6c273a00-643599de
+Reused verified preparation 36/56 bdd_727488c2-8a63df5c
+Reused verified preparation 37/56 bdd_7524f64f-4482f162
+Reused verified preparation 38/56 bdd_793b6756-ef820bf7
+Reused verified preparation 39/56 bdd_83d632ca-d1a0fb0e
+Reused verified preparation 40/56 bdd_881a4fa1-30d35cf2
+Reused verified preparation 41/56 bdd_8ac5ec86-4f2d230e
+Reused verified preparation 42/56 bdd_8b968c79-82942df8
+Reused verified preparation 43/56 bdd_8cb281a4-b7ad4e5f
+Reused verified preparation 44/56 bdd_8e803264-d6ec9f71
+Reused verified preparation 45/56 bdd_90ab93a3-25fede67
+Reused verified preparation 46/56 bdd_91104422-94debf20
+Reused verified preparation 47/56 bdd_92845c7c-d5a8970d
+Reused verified preparation 48/56 bdd_9542db5e-c825c091
+Reused verified preparation 49/56 bdd_97f4494c-f381f531
+Reused verified preparation 50/56 bdd_987dd552-b5f04445
+Reused verified preparation 51/56 bdd_9c59583c-bb673bf1
+Reused verified preparation 52/56 bdd_9f885317-207ffc3c
+Reused verified preparation 53/56 bdd_a273bf34-8f8199ca
+Reused verified preparation 54/56 bdd_afdefbf2-fd0505fa
+Reused verified preparation 55/56 bdd_b00ae1f9-b6c6d12d
+Reused verified preparation 56/56 bdd_b1357bde-525ed0d7
+SUBSET_READY 56 {'train': 35, 'test': 17, 'validation': 4} 28fbfdd759c2ea76bb6bf6d97f113502f9f153856f7429e21b238a372247adb5

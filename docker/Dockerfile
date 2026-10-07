@@ -1,3 +1,16 @@
+FROM nvidia/cuda:12.1.1-devel-ubuntu22.04 AS vmaf-cuda-builder
+ARG VMAF_CUDA_COMMIT=17a67b238ce0539bdeafdc95961abac64fa16ea8
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential git meson ninja-build nasm pkg-config python3 xxd && rm -rf /var/lib/apt/lists/*
+RUN git init /tmp/vmaf && git -C /tmp/vmaf remote add origin https://github.com/Netflix/vmaf.git && \
+    git -C /tmp/vmaf fetch --depth 1 origin "${VMAF_CUDA_COMMIT}" && \
+    git -C /tmp/vmaf checkout --detach FETCH_HEAD && \
+    test "$(git -C /tmp/vmaf rev-parse HEAD)" = "${VMAF_CUDA_COMMIT}" && \
+    meson setup /tmp/vmaf/libvmaf/build /tmp/vmaf/libvmaf \
+      --prefix=/opt/vmaf-cuda --libdir=lib --buildtype=release \
+      -Denable_cuda=true -Denable_tests=false -Denable_docs=false -Dbuilt_in_models=true && \
+    meson compile -C /tmp/vmaf/libvmaf/build -j 4 && meson install -C /tmp/vmaf/libvmaf/build
+
 FROM ubuntu:22.04 AS media-builder
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -68,6 +81,7 @@ RUN python -m pip install --no-cache-dir --upgrade pip && \
     rm -rf /tmp/vcu-surrogate
 
 COPY --from=media-builder /opt/media /opt/media
+COPY --from=vmaf-cuda-builder /opt/vmaf-cuda /opt/vmaf-cuda
 ENV PATH=/opt/media/bin:${PATH} \
     LD_LIBRARY_PATH=/opt/media/lib \
     VCU_PROJECT_ROOT=/workspace \

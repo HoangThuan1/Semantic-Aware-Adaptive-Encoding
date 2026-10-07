@@ -1,0 +1,25 @@
+{
+  "detections": 14726,
+  "job_hash": "01640b323d0cf01e1c8e3d06f4160de531c1dcd9c6a3a80cf8cc9fd3e59cb9d2",
+  "reference_sha256": "e69366cacf7b3079c0a885fcf3788c9d1eb904e21f9ce422f13abb6fa2f6d947",
+  "weights_sha256": "4f180cf23ba0717ada0badd6c685026d73d48f184d00fc159c2641284b2ac0a3",
+  "yolo": {
+    "classes": {
+      "bicycle": 1.0,
+      "bus": 0.8,
+      "car": 0.8,
+      "motorcycle": 1.0,
+      "person": 1.0,
+      "stop sign": 0.7,
+      "traffic light": 0.7,
+      "truck": 0.8
+    },
+    "confidence": 0.25,
+    "image_size": 640,
+    "iou": 0.45,
+    "max_detections": 32,
+    "roi_padding_fraction": 0.05,
+    "variant": "yolov5n",
+    "weights": "models/yolov5n.pt"
+  }
+}

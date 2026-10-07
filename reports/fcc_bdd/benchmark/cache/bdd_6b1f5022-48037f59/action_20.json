@@ -1,0 +1,24 @@
+{
+  "artifact_path_migration": {
+    "config_sha256": "555409c5acfc0ae866d222a91e69e68a61ba99fe438326191a5097007cbbe7a0",
+    "dataset_sha256": "28fbfdd759c2ea76bb6bf6d97f113502f9f153856f7429e21b238a372247adb5",
+    "previous_config_sha256": "269af18c852c4834c43f8d540e7fb643d27a04daedf677262dd4859038205ecf",
+    "reason": "storage path only; unchanged inputs and verified outputs"
+  },
+  "classes_sha256": "90c6627ae94e3d60ccc00e62a8d478b4f3ebdeace1705daa28cd78b6d4d76f0e",
+  "complete_batch_inference": true,
+  "elapsed_s": 10.292276878997654,
+  "job_hash": "9cac2658bde3848f0c52ce6a764187bcc784253f9da85ac6832c8f8107a631b5",
+  "metric_sampling_config_migration": {
+    "benchmark_sampling_changed": false,
+    "from_config_sha256": "555409c5acfc0ae866d222a91e69e68a61ba99fe438326191a5097007cbbe7a0",
+    "to_config_sha256": "291768767a8963351862f2b88e637789c729257c0a433b9e3f2e2ffd6223b472"
+  },
+  "nms_completion_fix_migration": {
+    "previous_job_hash": "0824944efce7faa1825a30e6ec32055db9c77d2ff431a3fb19e7f0b8b0c62ecb",
+    "reason": "No NMS timeout logged for this cache; quality policy unchanged; CPU worker configuration only"
+  },
+  "nms_timeout_retry_batches": 0,
+  "output_sha256": "46406e1ad6bae69fb8d55bf3d4ad584c44c2c80126ebc46e9c7613cb2d47607b",
+  "sample_frames": 120
+}

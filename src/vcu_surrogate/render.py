@@ -43,10 +43,14 @@ def render_policy_videos(config: dict) -> None:
     output_root = artifacts / "policy_videos" / f"seed_{seed}"
     output_root.mkdir(parents=True, exist_ok=True)
     manifest = []
-    for reference in references.itertuples(index=False):
+    for reference in references[references.split == "test"].itertuples(index=False):
         video_id = str(reference.video_id)
+        candidates = sorted(rollout.loc[(rollout.video_id == video_id) & (rollout.trace_start == 0), "trace_id"].unique())
+        if not candidates:
+            raise RuntimeError(f"no valid test trace for {video_id}")
+        trace_id = candidates[0]
         selected = rollout[(rollout.video_id == video_id)
-                           & (rollout.trace_id == "Verizon-LTE-driving")
+                           & (rollout.trace_id == trace_id)
                            & (rollout.trace_start == 0)].sort_values("gop_idx")
         expected_indices = list(range(WARMUP_GOPS, int(reference.gop_count)))
         if selected.gop_idx.tolist() != expected_indices:
@@ -71,9 +75,9 @@ def render_policy_videos(config: dict) -> None:
                 f"inpoint {k:.6f}", f"outpoint {k + 1:.6f}", "duration 1.000000",
             ])
         job_hash = stable_hash({"seed": seed, "video_id": video_id,
-                                "trace_id": "Verizon-LTE-driving", "trace_start": 0,
+                                "trace_id": trace_id, "trace_start": 0,
                                 "gop_frames": gop_frames, "sources": source_files})
-        output = output_root / f"{video_id}_Verizon_start0.mp4"
+        output = output_root / f"{video_id}_{trace_id}_start0.mp4"
         sidecar = output.with_suffix(".json")
         if output.is_file() and sidecar.is_file():
             existing = json.loads(sidecar.read_text())
@@ -100,13 +104,13 @@ def render_policy_videos(config: dict) -> None:
                     raise RuntimeError(f"rendered policy video has non-P frame {frame_idx}: {temporary}")
             temporary.replace(output)
             write_json(sidecar, {"job_hash": job_hash, "selected_seed": seed,
-                                 "video_id": video_id, "trace_id": "Verizon-LTE-driving",
+                                 "video_id": video_id, "trace_id": trace_id,
                                  "trace_start": 0, "gop_count": int(reference.gop_count),
                                  "frame_count": int(reference.frame_count), "actions": actions,
                                  "output_sha256": sha256(output),
                                  "render_method": "GOP stream-copy from offline action grid"})
         manifest.append({"video_id": video_id, "selected_seed": seed,
-                         "trace_id": "Verizon-LTE-driving", "trace_start": 0,
+                         "trace_id": trace_id, "trace_start": 0,
                          "gop_count": int(reference.gop_count),
                          "frame_count": int(reference.frame_count),
                          "video_path": str(output.relative_to(ROOT)), "sha256": sha256(output)})

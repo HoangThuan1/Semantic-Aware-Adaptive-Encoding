@@ -154,13 +154,20 @@ def validate_dataset(config: dict) -> None:
         raise RuntimeError("one or more GOPs do not contain the complete action grid")
     if not (grid.frame_count == gop).all() or not (grid.packet_count == gop).all() or not (grid.key_packets == 1).all():
         raise RuntimeError("grid contains an invalid GOP frame/packet/keyframe count")
+    stride = config.get("metrics", {}).get("sample_stride", 1)
+    if stride > 1 and ("metric_sample_count" not in grid or
+                       not (grid.metric_sample_count == gop // stride).all()):
+        raise RuntimeError("grid contains invalid metric sample coverage")
     mandatory_finite = ["actual_bitrate_mbps", "vmaf", "psnr", "ssim"]
     if not np.isfinite(grid[mandatory_finite].to_numpy(dtype=float)).all():
         raise RuntimeError("non-finite mandatory metric")
-    if not set(catalog.split) == {"train", "validation", "test", "excluded"}:
-        raise RuntimeError("bandwidth split is incomplete")
-    if set(traces.split) != {"train", "validation", "test"} or len(catalog) != 6:
-        raise RuntimeError("Mahimahi LTE uplink trace selection is invalid")
+    if set(catalog.split) != {"train", "validation", "test"} or set(catalog.source) != {"fcc", "norway"}:
+        raise RuntimeError("FCC/Norway bandwidth split incomplete")
+    if catalog.groupby("group_id").split.nunique().max() != 1:
+        raise RuntimeError("trace session leaks between splits")
+    video_splits = reference.set_index("video_id").split
+    if not (transitions.video_id.map(video_splits) == transitions.split).all():
+        raise RuntimeError("transition video leaks between splits")
     if (traces.bandwidth_mbps < 0).any():
         raise RuntimeError("negative bandwidth value")
     if transitions.empty or not transitions.semantic_score.between(0, 1).all():

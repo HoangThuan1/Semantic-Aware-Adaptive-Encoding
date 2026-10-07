@@ -1,0 +1,32 @@
+{
+  "actions": [
+    4,
+    4,
+    4,
+    4,
+    14,
+    14,
+    27,
+    27,
+    14,
+    27,
+    27,
+    27,
+    27,
+    27,
+    27,
+    27,
+    17,
+    27,
+    27
+  ],
+  "frame_count": 570,
+  "gop_count": 19,
+  "job_hash": "30a024c190036ed4c0f1be3f3911b78607388db47f27423447e311ccc3bfb666",
+  "output_sha256": "344c3d82a5cff03a96174c5c0c11ba82ffb72b91bb89a6af563066f50c5e5a5a",
+  "render_method": "GOP stream-copy from offline action grid",
+  "selected_seed": 13,
+  "trace_id": "Verizon-LTE-driving",
+  "trace_start": 0,
+  "video_id": "Sample_Video1"
+}

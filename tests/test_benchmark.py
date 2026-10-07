@@ -118,3 +118,69 @@ def test_cuda_region_quality_matches_cpu_definition():
             gpu = region_quality_cuda(reference, distorted, mask)
             for key in ('roi_psnr_y', 'nonroi_psnr_y', 'roi_ssim_y', 'nonroi_ssim_y'):
                 assert gpu[key] == pytest.approx(cpu[key], abs=1e-3)
+
+
+def test_streamed_policy_summary_matches_single_frame(tmp_path):
+    pytest.importorskip("pyarrow")
+    from vcu_surrogate.benchmark import summarize_policies
+    from vcu_surrogate.benchmark import COUNT_COLUMNS, QUALITY_COLUMNS
+    parts, episodes = [], []
+    for name in ('ddqn_selected', 'fixed_validation_selected'):
+        fields = {key: [1., 1.] for key in (*COUNT_COLUMNS, *QUALITY_COLUMNS)}
+        fields.update(strategy=[name] * 2, split=['test'] * 2, video_id=['clip'] * 2,
+                      trace_id=['trace'] * 2, trace_start=[0] * 2,
+                      reward=[.1, .3], vmaf=[80., 82.], roi_ssim=[.8, .9],
+                      actual_bitrate_mbps=[1., 1.], bandwidth_violation=[False, True],
+                      penalty_action_switch=[0., .25], deadline_miss=[False, True],
+                      uncompleted=[False, True], completion_latency_s=[.5, np.nan],
+                      backlog_mbit=[0., 1.], excess_mbit=[0., 1.], served_mbit=[1., 0.],
+                      unused_capacity_mbit=[1., 0.], bandwidth_mbps=[2., 0.], post_drop=[False, True])
+        parts.append(pd.DataFrame(fields))
+        episodes.append(dict(strategy=name, split='test', video_id='clip', trace_id='trace', trace_start=0,
+                             gops=2, return_value=.4, reward_per_gop=.2, vmaf=81.,
+                             actual_bitrate_mbps=1., bandwidth_violation=.5, deadline_miss=.5))
+    episode_table = pd.DataFrame(episodes).rename(columns={'return_value': 'return'})
+    combined = pd.concat(parts, ignore_index=True)
+    a = summarize_policies(episode_table, combined, tmp_path / 'single')
+    b = summarize_policies(episode_table, iter(parts), tmp_path / 'streamed')
+    pd.testing.assert_frame_equal(a, b)
+    pd.testing.assert_frame_equal(pd.read_parquet(tmp_path / 'streamed/policy_rollouts.parquet'), combined)
+    comparisons = pd.read_csv(tmp_path / 'streamed/paired_policy_comparisons.csv')
+    assert (comparisons.mean_paired_episode_difference == 0).all()
+
+
+def test_nms_timeout_retries_every_image_without_treating_empty_as_complete():
+    import logging
+    from types import SimpleNamespace
+    from vcu_surrogate.benchmark import _predict_complete
+    logger=logging.getLogger('nms-timeout-test')
+    calls=[]
+    def model(images,size):
+        calls.append(list(images))
+        if len(images)>1:
+            logger.warning('WARNING NMS time limit 0.900s exceeded')
+            return SimpleNamespace(xyxy=[np.array([images[0]]),np.empty(0),np.empty(0)])
+        return SimpleNamespace(xyxy=[np.array([images[0]])])
+    original_handlers=list(logger.handlers)
+    output,retried=_predict_complete(model,[10,20,30],640,logger)
+    assert retried and calls==[[10,20,30],[10],[20],[30]]
+    assert [x.tolist() for x in output]==[[10],[20],[30]]
+    assert logger.handlers==original_handlers
+
+
+def test_nms_normal_empty_predictions_are_kept_and_handler_cleans_up_on_error():
+    import logging
+    from types import SimpleNamespace
+    from vcu_surrogate.benchmark import _predict_complete
+    logger=logging.getLogger('nms-normal-test')
+    calls=[]
+    def model(images,size):
+        calls.append(images)
+        return SimpleNamespace(xyxy=[np.empty((0,6)) for image in images])
+    output,retried=_predict_complete(model,[10,20],640,logger)
+    assert not retried and len(calls)==1 and len(output)==2
+    original_handlers=list(logger.handlers)
+    def broken(images,size):raise RuntimeError('model failed')
+    with pytest.raises(RuntimeError,match='model failed'):
+        _predict_complete(broken,[10],640,logger)
+    assert logger.handlers==original_handlers

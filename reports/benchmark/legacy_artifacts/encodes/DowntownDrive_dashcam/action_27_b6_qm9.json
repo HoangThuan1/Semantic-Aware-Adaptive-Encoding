@@ -1,0 +1,46 @@
+{
+  "action_id": 27,
+  "bitrate_mbps": 6.0,
+  "delta_qp": -9,
+  "encoder": {
+    "bframes": 0,
+    "bitrates_mbps": [
+      0.5,
+      1,
+      1.5,
+      2,
+      3,
+      4,
+      6,
+      8
+    ],
+    "codec": "libx264",
+    "filler": false,
+    "force_cfr": true,
+    "nal_hrd": "vbr",
+    "preset": "veryfast",
+    "profile": "high",
+    "qp_max": 51,
+    "qp_min": 10,
+    "rc_lookahead": 0,
+    "refs": 1,
+    "roi_delta_qp": [
+      0,
+      -3,
+      -6,
+      -9
+    ],
+    "scenecut": 0,
+    "sliced_threads": false,
+    "threads": 6,
+    "tune": "zerolatency",
+    "vbv_init": 0.5,
+    "vbv_seconds": 3.0
+  },
+  "gop_frames": 30,
+  "job_hash": "d89871301ac2b220b2f61873a4688ff7909377384fdaca2d081f2082cc7cea29",
+  "output_sha256": "28834a7eb075e803c25313a1374b99ddccd67f6fe72b81e6f75a155a8817a9d3",
+  "reference_sha256": "4778bbd7b63914836c5ed2ef2a7e92e45db933c9e7fd9f7d7e2c7b4ba9fa94d5",
+  "roi_sha256": "46a689f6a020e173e43f9aff7e6985ab22867e75912086dd3e3e9e66600fd1ad",
+  "video_id": "DowntownDrive_dashcam"
+}

@@ -1,0 +1,46 @@
+{
+  "action_id": 9,
+  "bitrate_mbps": 1.5,
+  "delta_qp": -3,
+  "encoder": {
+    "bframes": 0,
+    "bitrates_mbps": [
+      0.5,
+      1,
+      1.5,
+      2,
+      3,
+      4,
+      6,
+      8
+    ],
+    "codec": "libx264",
+    "filler": false,
+    "force_cfr": true,
+    "nal_hrd": "vbr",
+    "preset": "veryfast",
+    "profile": "high",
+    "qp_max": 51,
+    "qp_min": 10,
+    "rc_lookahead": 0,
+    "refs": 1,
+    "roi_delta_qp": [
+      0,
+      -3,
+      -6,
+      -9
+    ],
+    "scenecut": 0,
+    "sliced_threads": false,
+    "threads": 6,
+    "tune": "zerolatency",
+    "vbv_init": 0.5,
+    "vbv_seconds": 3.0
+  },
+  "gop_frames": 30,
+  "job_hash": "51bac315acab77f90868205fed05cb0b769b8d07f77300933e02af3a1977f38b",
+  "output_sha256": "da8b13d4d30f0f143c695c37323c334df67d9f0e0a03eef92e929d09548fc13b",
+  "reference_sha256": "eb542d2c2cd65bbf6162b2ace131f1e7201b4a21db76f239792a34db3917b654",
+  "roi_sha256": "1219309ccc09932529b0f432aad8d8f057176ca29ce1efbd7c205ccc4f3c2e9c",
+  "video_id": "Sample_Video1"
+}

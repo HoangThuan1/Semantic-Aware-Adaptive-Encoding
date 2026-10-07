@@ -1,0 +1,9 @@
+{
+  "classes_sha256": "b07d9c0c5db4944c6163014a7161d3a0d776c85dabe80b76e9073c2f65b85abf",
+  "complete_batch_inference": true,
+  "elapsed_s": 8.374071417001687,
+  "job_hash": "3dad0f1aee4c8061f2003601e50599e18beaf6ddfd317674982e7501c6eab7da",
+  "nms_timeout_retry_batches": 0,
+  "output_sha256": "faafee54c835be64cb68c5ed81cd01af13d27ffc626f10f3cb74e3c20f434794",
+  "sample_frames": 120
+}

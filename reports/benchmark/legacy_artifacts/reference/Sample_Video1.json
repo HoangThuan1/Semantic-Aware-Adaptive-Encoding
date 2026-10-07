@@ -1,0 +1,15 @@
+{
+  "job_hash": "b9ae5b69fc7b9dbe81280d263324eea2ac236657e6ef2996393b6eab99e869af",
+  "keep_frames": 570,
+  "output_sha256": "eb542d2c2cd65bbf6162b2ace131f1e7201b4a21db76f239792a34db3917b654",
+  "source": "videos/Sample_Video1.mp4",
+  "source_sha256": "af49f972920cb97a6ea56bc7ceda608273c1d21172eccfb80dc8e70dccf2a5f3",
+  "video": {
+    "colorspace": "bt709",
+    "fps": 30,
+    "gop_frames": 30,
+    "height": 1080,
+    "pixel_format": "yuv420p",
+    "width": 1920
+  }
+}

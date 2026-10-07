@@ -1,0 +1,15 @@
+{
+  "job_hash": "5a840acd8de23d31b3569c67782115d870d671fb8b910f4f50af3aa05aa759eb",
+  "keep_frames": 1500,
+  "output_sha256": "319030ad0dfa0452fb43a788e3920649e0bf68f6fca31bde3695c52f4055c83f",
+  "source": "videos/Highspeed_dashcam.mp4",
+  "source_sha256": "16ca79f14ed2e738fce034052034a986ae951273ea9a41f623d2dc85bb336489",
+  "video": {
+    "colorspace": "bt709",
+    "fps": 30,
+    "gop_frames": 30,
+    "height": 1080,
+    "pixel_format": "yuv420p",
+    "width": 1920
+  }
+}

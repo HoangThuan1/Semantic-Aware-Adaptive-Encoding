@@ -1,0 +1,12 @@
+{
+  "encoded_sha256": "04aaeb2f61fc7e1187d952f4ac178e047a721cfde94e7e71b0bb68977f6d148a",
+  "job_hash": "d990851c301ca8b6d5871be79555c61317cf76ffd47a34692ee0cc9b36334c3f",
+  "metrics": [
+    "vmaf",
+    "psnr_y",
+    "float_ssim",
+    "roi_psnr",
+    "roi_ssim"
+  ],
+  "reference_sha256": "319030ad0dfa0452fb43a788e3920649e0bf68f6fca31bde3695c52f4055c83f"
+}

@@ -1,0 +1,13 @@
+{
+  "classes_sha256": "35240ce4a4ffd1e201e381806f5325f921b98f017d2dc7c8d214f32b42ebd65d",
+  "complete_batch_inference": true,
+  "elapsed_s": 10.684863356997084,
+  "job_hash": "1d0af46a5d83e64dedd2968a9370202f7beac268f16b36f97682517bff032be2",
+  "nms_completion_fix_migration": {
+    "previous_job_hash": "03e3e40733d51e149b81cddd003fa98b5047f27403497c5f5103affc972dd043",
+    "reason": "No NMS timeout logged for this cache; quality policy unchanged; CPU worker configuration only"
+  },
+  "nms_timeout_retry_batches": 0,
+  "output_sha256": "4fff7e9bea7d48644a07cc5064c24f6b5b1023c5bb93c187fceae28c45c8324b",
+  "sample_frames": 120
+}

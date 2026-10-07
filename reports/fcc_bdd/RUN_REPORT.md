@@ -1,0 +1,104 @@
+# FCC/Norway + BDD100K run
+
+Status: **running**; stage: `validate`.
+
+Completed stages: tests, normalize, infer, preflight, smoke_capacity, traces, encode-grid, metrics, transitions.
+
+```json
+{
+  "video_count": 56,
+  "video_splits": {
+    "train": 35,
+    "test": 17,
+    "validation": 4
+  },
+  "bdd_bytes": 1005761671,
+  "bdd_videos": 51,
+  "traces_by_source_split": {
+    "norway/train": 47,
+    "norway/test": 11,
+    "norway/validation": 10,
+    "fcc/train": 41,
+    "fcc/test": 9,
+    "fcc/validation": 9
+  },
+  "dataset_sha256": "28fbfdd759c2ea76bb6bf6d97f113502f9f153856f7429e21b238a372247adb5"
+}
+```
+
+Metrics optimization (measured sample):
+
+```json
+{
+  "action_decode_passes": 1,
+  "backend": "opencv_float64_boxfilter",
+  "cpu_metric_workers": 5,
+  "cuda_metric_workers": 1,
+  "cuda_real_preflight": {
+    "action_id": 0,
+    "elapsed_s": 107.68585655799689,
+    "frame_count": 1200,
+    "maximum_errors": {
+      "psnr": 0.0,
+      "roi_pixel_fraction": 0.0,
+      "roi_psnr": 0.0,
+      "roi_ssim": 0.0,
+      "ssim": 0.0,
+      "vmaf": 0.0
+    },
+    "sample_count": 240,
+    "status": "passed",
+    "video_id": "bdd_114af10f-c3d93b85"
+  },
+  "cuda_trial_applied": true,
+  "decoder_threads": 2,
+  "ffmpeg_decoder_threads": 2,
+  "ffmpeg_filter_graph_threads": 1,
+  "maximum_roi_ssim_error": 5.11e-15,
+  "metric_sample_offset": 0,
+  "metric_sample_stride": 5,
+  "metric_workers": 6,
+  "opencv_threads": 1,
+  "optimized_roi_seconds": [
+    7.0427793269991525,
+    7.141835138998431
+  ],
+  "original_roi_seconds": 12.058389136000187,
+  "other_roi_metrics": "identical",
+  "parallel_original_seconds": 23.85303584000212,
+  "parallel_sample_actions": 6,
+  "parallel_sample_frames_per_action": 30,
+  "parallel_tuned_seconds": 22.56365346000166,
+  "reference_decode_passes": 1,
+  "sample_boxes": 150,
+  "sample_frames": 30,
+  "shared_reference_cache": {
+    "exact_frame_results": true,
+    "roi_cached_seconds": 103.16434808999838,
+    "roi_ffv1_seconds": 238.8973864039981,
+    "sample_frames": 60,
+    "storage_limits_enforced": false,
+    "vmaf_ffv1_seconds": 36.729750831000274,
+    "vmaf_raw_seconds": 28.863732558002084
+  },
+  "streaming_measurement": {
+    "actions": [
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "elapsed_s": 381.577,
+    "frames_per_action": 1200,
+    "not_full_pipeline_eta": true,
+    "pool_startup_included": true,
+    "video_id": "bdd_08227ff8-582c6d01"
+  },
+  "tests_passed": 56,
+  "vmaf_backend": "cpu+cuda",
+  "vmaf_threads_per_process": 2,
+  "workers": 6
+}
+```

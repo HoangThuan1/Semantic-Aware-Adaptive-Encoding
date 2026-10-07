@@ -9,7 +9,9 @@ pytest.importorskip("pyarrow")
 from vcu_surrogate.transitions import build_transitions  # noqa: E402
 
 
-def test_transition_schema_is_causal_and_warmup_is_fixed(tmp_path) -> None:
+def test_transition_schema_is_causal_and_warmup_is_fixed(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr("vcu_surrogate.transitions.video_manifest", lambda config: pd.DataFrame({"video_id": ["clip"], "split": ["train"]}))
+    monkeypatch.setattr("vcu_surrogate.transitions.dataset_hash", lambda config: "fixture-dataset")
     artifacts = tmp_path / "artifacts"
     processed = tmp_path / "processed"
     (artifacts / "metrics").mkdir(parents=True)

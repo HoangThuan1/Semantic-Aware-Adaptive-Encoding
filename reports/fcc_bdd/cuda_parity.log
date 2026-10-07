@@ -1,0 +1,60 @@
++ ffmpeg -v error -f lavfi -i testsrc2=size=1920x1080:rate=30 -frames:v 30 -threads 2 -c:v ffv1 -pix_fmt yuv420p -y /tmp/pytest-of-unknown/pytest-1/test_subsample_preserves_tempo0/reference.mkv
++ ffmpeg -v error -i /tmp/pytest-of-unknown/pytest-1/test_subsample_preserves_tempo0/reference.mkv -c:v libx264 -threads 2 -preset veryfast -crf 32 -pix_fmt yuv420p -y /tmp/pytest-of-unknown/pytest-1/test_subsample_preserves_tempo0/encoded.mp4
++ ffprobe -v error -select_streams v:0 -show_entries stream=width,height,pix_fmt,avg_frame_rate -of json /tmp/pytest-of-unknown/pytest-1/test_subsample_preserves_tempo0/reference.mkv
++ ffmpeg -hide_banner -loglevel error -threads 2 -i /tmp/pytest-of-unknown/pytest-1/test_subsample_preserves_tempo0/reference.mkv -map 0:v:0 -an -c:v rawvideo -pix_fmt yuv420p -fps_mode passthrough -f rawvideo -y /tmp/pytest-of-unknown/pytest-1/test_subsample_preserves_tempo0/ref.yuv
++ ffmpeg -hide_banner -loglevel warning -filter_complex_threads 1 -threads 2 -i /tmp/pytest-of-unknown/pytest-1/test_subsample_preserves_tempo0/encoded.mp4 -f rawvideo -pixel_format yuv420p -video_size 1920x1080 -framerate 30 -i /tmp/pytest-of-unknown/pytest-1/test_subsample_preserves_tempo0/ref.yuv -filter_complex [0:v]settb=AVTB,setpts=N/(30*TB)[dist];[1:v]settb=AVTB,setpts=N/(30*TB)[ref];[dist][ref]libvmaf=log_fmt=json:log_path=/tmp/pytest-of-unknown/pytest-1/test_subsample_preserves_tempo0/full.json:model=version=vmaf_v0.6.1:feature=name=psnr|name=float_ssim:n_threads=2:n_subsample=1 -f null -
+[rawvideo @ 0x609b4fffe6c0] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x6456b0c843c0] Estimating duration from bitrate, this may be inaccurate
+[in#0/rawvideo @ 0x6456b0c7f440] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+CUDA_PARITY {"vmaf_max_error": 0.0, "psnr_ssim_max_error": 0.0}
+.
+REAL_CUDA_PARITY {"video_id": "bdd_114af10f-c3d93b85", "action_id": 0, "frame_count": 1200, "sample_count": 240, "elapsed_s": 107.68585655799689, "maximum_errors": {"vmaf": 0.0, "psnr": 0.0, "ssim": 0.0, "roi_psnr": 0.0, "roi_ssim": 0.0, "roi_pixel_fraction": 0.0}, "status": "passed"}
+MIXED_SIX_ACTION {"actions_per_hour": 102.38655593196646, "backend_counts": {"cpu": 5, "cuda": 1}, "elapsed_s": 210.9651975631714, "pool_startup_included": true, "video_id": "bdd_114af10f-c3d93b85"}
+MIXED_VIDEO_METRICS {"current_video": "bdd_114af10f-c3d93b85", "metric_elapsed_s": 849.7665374279022, "new_metric_actions_completed": 26, "new_metric_actions_by_backend": {"cpu": 22, "cuda": 4}, "new_actions_per_hour": 110.1479004848922, "first_six_action_measurement": {"actions_per_hour": 102.38655593196646, "backend_counts": {"cpu": 5, "cuda": 1}, "elapsed_s": 210.9651975631714, "pool_startup_included": true, "video_id": "bdd_114af10f-c3d93b85"}}
+SPEED_TRIAL_START cpu6 bdd_16dce9f0-a914a65e [0, 1, 2, 3, 4, 5]
+[rawvideo @ 0x60b77acff2c0] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x5f57878cb2c0] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x608ee11f32c0] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x5ae6e2b9d2c0] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x5fb8f412b2c0] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x5fc415d862c0] Estimating duration from bitrate, this may be inaccurate
+SPEED_TRIAL_DISCARDED previous overlapping trial; no result accepted
+ISOLATED_SPEED_TRIAL_START cpu6 bdd_16dce9f0-a914a65e [0, 1, 2, 3, 4, 5]
+[rawvideo @ 0x5cc8c1ee4240] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x5c1f4ef28240] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x64fdb25a5240] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x5f26472bc240] [rawvideo @ 0x5e5a5c2de240] Estimating duration from bitrate, this may be inaccurate
+Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x6280c4a68240] Estimating duration from bitrate, this may be inaccurate
+[in#0/rawvideo @ 0x5c1f4ef23880] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+[in#0/rawvideo @ 0x5cc8c1edf880] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+[in#0/rawvideo @ 0x6280c4a63880] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+[in#0/rawvideo @ 0x5e5a5c2d9880] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+[in#0/rawvideo @ 0x64fdb25a0880] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+[in#0/rawvideo @ 0x5f26472b7880] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+ISOLATED_SPEED_TRIAL_ACTION cpu6 5 1 123.535
+ISOLATED_SPEED_TRIAL_ACTION cpu6 2 2 123.544
+ISOLATED_SPEED_TRIAL_ACTION cpu6 4 3 123.548
+ISOLATED_SPEED_TRIAL_ACTION cpu6 3 4 123.576
+ISOLATED_SPEED_TRIAL_ACTION cpu6 0 5 123.949
+ISOLATED_SPEED_TRIAL_ACTION cpu6 1 6 123.98
+ISOLATED_SPEED_TRIAL_DONE cpu6 {"elapsed_s": 124.03049463299976, "actions_per_hour": 174.15072046526424, "worker_startup": "fork, included", "cpu_workers": 6, "cuda_workers": 0, "vmaf_cpu_threads": 2, "sample_stride": 5, "frames_per_action": 1200, "sample_count_per_action": 240}
+ISOLATED_SPEED_TRIAL_START cpu5_cuda1 bdd_16dce9f0-a914a65e [0, 1, 2, 3, 4, 5]
+[rawvideo @ 0x5fd5c24eb240] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x55ef92b13240] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x5a428148a240] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x5c5472c28240] Estimating duration from bitrate, this may be inaccurate
+[rawvideo @ 0x6172f6de8240] Estimating duration from bitrate, this may be inaccurate
+[in#0/rawvideo @ 0x55ef92b0e880] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+[in#0/rawvideo @ 0x6172f6de3880] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+[in#0/rawvideo @ 0x5fd5c24e6880] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+[in#0/rawvideo @ 0x5c5472c23880] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+[in#0/rawvideo @ 0x5a4281485880] Thread message queue blocking; consider raising the thread_queue_size option (current value: 8)
+ISOLATED_SPEED_TRIAL_ACTION cpu5_cuda1 2 1 121.608
+ISOLATED_SPEED_TRIAL_ACTION cpu5_cuda1 3 2 121.611
+ISOLATED_SPEED_TRIAL_ACTION cpu5_cuda1 0 3 121.612
+ISOLATED_SPEED_TRIAL_ACTION cpu5_cuda1 5 4 121.834
+ISOLATED_SPEED_TRIAL_ACTION cpu5_cuda1 4 5 122.522
+ISOLATED_SPEED_TRIAL_ACTION cpu5_cuda1 1 6 122.756
+ISOLATED_SPEED_TRIAL_DONE cpu5_cuda1 {"elapsed_s": 122.81557669600443, "actions_per_hour": 175.87345661751647, "worker_startup": "fork, included", "cpu_workers": 5, "cuda_workers": 1, "vmaf_cpu_threads": 2, "sample_stride": 5, "frames_per_action": 1200, "sample_count_per_action": 240}
+SPEED_COMPARISON {"video_id": "bdd_16dce9f0-a914a65e", "action_ids": [0, 1, 2, 3, 4, 5], "measurements": {"cpu6": {"elapsed_s": 124.03049463299976, "actions_per_hour": 174.15072046526424, "worker_startup": "fork, included", "cpu_workers": 6, "cuda_workers": 0, "vmaf_cpu_threads": 2, "sample_stride": 5, "frames_per_action": 1200, "sample_count_per_action": 240}, "cpu5_cuda1": {"elapsed_s": 122.81557669600443, "actions_per_hour": 175.87345661751647, "worker_startup": "fork, included", "cpu_workers": 5, "cuda_workers": 1, "vmaf_cpu_threads": 2, "sample_stride": 5, "frames_per_action": 1200, "sample_count_per_action": 240}}, "cpu6_speedup_vs_mixed": 0.9902046836095412, "parity": "passed", "cache_order": "CPU first, mixed second; same cache and actions; reference is not decoded again"}
