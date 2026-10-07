@@ -1,0 +1,46 @@
+{
+  "action_id": 16,
+  "bitrate_mbps": 3.0,
+  "delta_qp": 0,
+  "encoder": {
+    "bframes": 0,
+    "bitrates_mbps": [
+      0.5,
+      1,
+      1.5,
+      2,
+      3,
+      4,
+      6,
+      8
+    ],
+    "codec": "libx264",
+    "filler": false,
+    "force_cfr": true,
+    "nal_hrd": "vbr",
+    "preset": "veryfast",
+    "profile": "high",
+    "qp_max": 51,
+    "qp_min": 10,
+    "rc_lookahead": 0,
+    "refs": 1,
+    "roi_delta_qp": [
+      0,
+      -3,
+      -6,
+      -9
+    ],
+    "scenecut": 0,
+    "sliced_threads": false,
+    "threads": 6,
+    "tune": "zerolatency",
+    "vbv_init": 0.5,
+    "vbv_seconds": 3.0
+  },
+  "gop_frames": 30,
+  "job_hash": "56cafaa943df6b4e9778a6d474fbf985fd5ac05f82be8e8fc8eb393d1d52dca9",
+  "output_sha256": "47a8a528093b8d4ee80a38b442c43e988d4c7a198ccde20964acf5c9cbc55739",
+  "reference_sha256": "e69366cacf7b3079c0a885fcf3788c9d1eb904e21f9ce422f13abb6fa2f6d947",
+  "roi_sha256": "54dad151e213d900eff07ab8bbf7a19920215b7c0284fea36c135e554d9d8e21",
+  "video_id": "RainyDrive_dashcam"
+}

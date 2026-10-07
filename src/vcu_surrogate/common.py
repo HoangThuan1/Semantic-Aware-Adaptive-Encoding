@@ -28,9 +28,12 @@ PIPELINE_CONTRACT = {
         "qp_min": 10, "qp_max": 51, "filler": False, "threads": 6,
         "sliced_threads": False, "nal_hrd": "vbr", "force_cfr": True,
     },
+    "dataset": {
+        "bdd_revision": "2e48a0340eb591fa1918f3375d55601a7f0bbab3",
+    },
     "traces": {
-        "mahimahi_commit": "f1346c38c415abfc98626dd82450f49a57033603",
-        "mahimahi_url": "https://github.com/ravinet/mahimahi.git",
+        "commit": "d28c4fd48d0e358db024cc0217b111c070815fa7",
+        "url": "https://github.com/confiwent/Real-world-bandwidth-traces.git",
     },
 }
 
@@ -52,6 +55,12 @@ def load_config(path: str | Path = DEFAULT_CONFIG) -> dict[str, Any]:
     config["_config_path"] = str(Path(path).resolve())
     config["_config_sha256"] = sha256(Path(path))
     assert_pipeline_contract(config)
+    metrics = config.get("metrics", {})
+    if metrics:
+        if (metrics.get("sample_stride") != 5 or metrics.get("sample_offset") != 0
+                or (metrics.get("cpu_workers"), metrics.get("cuda_workers")) not in ((6, 0), (5, 1))
+                or metrics.get("vmaf_cuda_commit") != "17a67b238ce0539bdeafdc95961abac64fa16ea8"):
+            raise RuntimeError("metrics must use stride 5, offset 0, six CPU workers or five CPU workers and one pinned CUDA worker")
     return config
 
 

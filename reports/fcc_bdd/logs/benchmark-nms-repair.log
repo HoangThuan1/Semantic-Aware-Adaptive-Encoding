@@ -1,0 +1,73 @@
++ git -C /workspace/data/raw/fcc_bdd/network_traces rev-parse HEAD
+Fusing layers... 
+YOLOv5n summary: 213 layers, 1867405 parameters, 0 gradients
+benchmark measured 1/32 bdd_114af10f-c3d93b85 action=0 frames=120 seconds=11.5
+benchmark cached 2/32 bdd_114af10f-c3d93b85 action=1
+benchmark cached 3/32 bdd_114af10f-c3d93b85 action=2
+benchmark cached 4/32 bdd_114af10f-c3d93b85 action=3
+benchmark cached 5/32 bdd_114af10f-c3d93b85 action=4
+benchmark cached 6/32 bdd_114af10f-c3d93b85 action=5
+benchmark cached 7/32 bdd_114af10f-c3d93b85 action=6
+benchmark cached 8/32 bdd_114af10f-c3d93b85 action=7
+benchmark cached 9/32 bdd_114af10f-c3d93b85 action=8
+benchmark cached 10/32 bdd_114af10f-c3d93b85 action=9
+benchmark cached 11/32 bdd_114af10f-c3d93b85 action=10
+benchmark cached 12/32 bdd_114af10f-c3d93b85 action=11
+benchmark cached 13/32 bdd_114af10f-c3d93b85 action=12
+benchmark cached 14/32 bdd_114af10f-c3d93b85 action=13
+benchmark cached 15/32 bdd_114af10f-c3d93b85 action=14
+benchmark cached 16/32 bdd_114af10f-c3d93b85 action=15
+benchmark cached 17/32 bdd_114af10f-c3d93b85 action=16
+benchmark cached 18/32 bdd_114af10f-c3d93b85 action=17
+benchmark cached 19/32 bdd_114af10f-c3d93b85 action=18
+benchmark cached 20/32 bdd_114af10f-c3d93b85 action=19
+benchmark cached 21/32 bdd_114af10f-c3d93b85 action=20
+benchmark cached 22/32 bdd_114af10f-c3d93b85 action=21
+benchmark cached 23/32 bdd_114af10f-c3d93b85 action=22
+benchmark cached 24/32 bdd_114af10f-c3d93b85 action=23
+benchmark cached 25/32 bdd_114af10f-c3d93b85 action=24
+benchmark cached 26/32 bdd_114af10f-c3d93b85 action=25
+benchmark cached 27/32 bdd_114af10f-c3d93b85 action=26
+benchmark cached 28/32 bdd_114af10f-c3d93b85 action=27
+benchmark cached 29/32 bdd_114af10f-c3d93b85 action=28
+benchmark cached 30/32 bdd_114af10f-c3d93b85 action=29
+benchmark cached 31/32 bdd_114af10f-c3d93b85 action=30
+benchmark cached 32/32 bdd_114af10f-c3d93b85 action=31
+REPAIR_VERIFIED bdd_114af10f-c3d93b85 samples 120 first_predictions [7, 11, 9, 11, 9, 8, 11, 10]
++ git -C /workspace/data/raw/fcc_bdd/network_traces rev-parse HEAD
+Fusing layers... 
+YOLOv5n summary: 213 layers, 1867405 parameters, 0 gradients
+benchmark measured 1/32 bdd_16dce9f0-a914a65e action=0 frames=120 seconds=9.6
+benchmark cached 2/32 bdd_16dce9f0-a914a65e action=1
+benchmark cached 3/32 bdd_16dce9f0-a914a65e action=2
+benchmark cached 4/32 bdd_16dce9f0-a914a65e action=3
+benchmark cached 5/32 bdd_16dce9f0-a914a65e action=4
+benchmark cached 6/32 bdd_16dce9f0-a914a65e action=5
+benchmark cached 7/32 bdd_16dce9f0-a914a65e action=6
+benchmark cached 8/32 bdd_16dce9f0-a914a65e action=7
+benchmark cached 9/32 bdd_16dce9f0-a914a65e action=8
+benchmark cached 10/32 bdd_16dce9f0-a914a65e action=9
+benchmark cached 11/32 bdd_16dce9f0-a914a65e action=10
+benchmark cached 12/32 bdd_16dce9f0-a914a65e action=11
+benchmark cached 13/32 bdd_16dce9f0-a914a65e action=12
+benchmark cached 14/32 bdd_16dce9f0-a914a65e action=13
+benchmark cached 15/32 bdd_16dce9f0-a914a65e action=14
+benchmark cached 16/32 bdd_16dce9f0-a914a65e action=15
+benchmark cached 17/32 bdd_16dce9f0-a914a65e action=16
+benchmark cached 18/32 bdd_16dce9f0-a914a65e action=17
+benchmark cached 19/32 bdd_16dce9f0-a914a65e action=18
+benchmark cached 20/32 bdd_16dce9f0-a914a65e action=19
+benchmark cached 21/32 bdd_16dce9f0-a914a65e action=20
+benchmark cached 22/32 bdd_16dce9f0-a914a65e action=21
+benchmark cached 23/32 bdd_16dce9f0-a914a65e action=22
+benchmark cached 24/32 bdd_16dce9f0-a914a65e action=23
+benchmark cached 25/32 bdd_16dce9f0-a914a65e action=24
+benchmark cached 26/32 bdd_16dce9f0-a914a65e action=25
+benchmark cached 27/32 bdd_16dce9f0-a914a65e action=26
+benchmark cached 28/32 bdd_16dce9f0-a914a65e action=27
+benchmark cached 29/32 bdd_16dce9f0-a914a65e action=28
+benchmark cached 30/32 bdd_16dce9f0-a914a65e action=29
+benchmark cached 31/32 bdd_16dce9f0-a914a65e action=30
+benchmark cached 32/32 bdd_16dce9f0-a914a65e action=31
+REPAIR_VERIFIED bdd_16dce9f0-a914a65e samples 120 first_predictions [7, 6, 5, 10, 9, 11, 9, 7]
+REPAIRS_DONE

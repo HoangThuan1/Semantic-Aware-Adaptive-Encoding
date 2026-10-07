@@ -7,3 +7,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+videos/bdd100k/
+
+# Generated ZCU106 deployment payloads remain on disk for SD copy.
+root/videos/inference/*.nv12
+root/models/yolov5n/offline_yolov5n.pt
+root/tools/offline_encoder_host
+root/results/*

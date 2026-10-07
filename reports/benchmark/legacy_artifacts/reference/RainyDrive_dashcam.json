@@ -1,0 +1,15 @@
+{
+  "job_hash": "78485cbd4169cb71671e46d21a669bfd4df29b1b6d74d8e1262eb986293863fd",
+  "keep_frames": 1620,
+  "output_sha256": "e69366cacf7b3079c0a885fcf3788c9d1eb904e21f9ce422f13abb6fa2f6d947",
+  "source": "videos/RainyDrive_dashcam.mp4",
+  "source_sha256": "f1988e2272b445bbd173b0636b7938769f8cf8ab64dbad44b5611769650e009a",
+  "video": {
+    "colorspace": "bt709",
+    "fps": 30,
+    "gop_frames": 30,
+    "height": 1080,
+    "pixel_format": "yuv420p",
+    "width": 1920
+  }
+}

@@ -1,0 +1,2 @@
++ git -C /workspace/data/raw/fcc_bdd_half/network_traces rev-parse HEAD
++ git -C /workspace/data/raw/fcc_bdd_half/network_traces rev-parse HEAD

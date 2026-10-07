@@ -10,6 +10,7 @@ import pandas as pd
 import torch
 from torch import nn
 
+from .dataset import dataset_hash
 from .common import project_path, write_json
 from .policy_numpy import NumpyPolicy
 from .rl_env import (EpisodeMix, GridDataset, Normalizer, OfflineGOPEnv,
@@ -118,6 +119,7 @@ def _checkpoint(path: Path, network: QNetwork, target: QNetwork,
                 mix: EpisodeMix, replay: ReplayBuffer) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
+        "dataset_sha256": env.dataset.dataset_sha256,
         "online": network.state_dict(), "target": target.state_dict(),
         "optimizer": optimizer.state_dict(),
         "normalizer_mean": normalizer.mean, "normalizer_std": normalizer.std,
@@ -140,6 +142,7 @@ def _export_npz(path: Path, network: QNetwork, normalizer: Normalizer, config: d
     action_table = np.array([(b, q) for b in bitrates for q in deltas], dtype=np.float32)
     arrays = {"schema_version": np.array(1, dtype=np.int32),
               "state_columns": np.array(STATE_COLUMNS),
+              "dataset_sha256": np.array(dataset_hash(config)),
               "normalizer_mean": normalizer.mean.astype(np.float64),
               "normalizer_std": normalizer.std.astype(np.float64),
               "normalizer_clip": np.array(normalizer.clip, dtype=np.float32),
@@ -262,6 +265,8 @@ def evaluate(config: dict) -> None:
             raise RuntimeError(f"invalid DDQN checkpoint: {path}")
         if payload["config"]["_config_sha256"] != config["_config_sha256"]:
             raise RuntimeError(f"DDQN checkpoint configuration mismatch: {path}")
+        if payload.get("dataset_sha256") != dataset.dataset_sha256:
+            raise RuntimeError("DDQN checkpoint dataset mismatch")
         normalizer = Normalizer(payload["normalizer_mean"], payload["normalizer_std"],
                                 payload["normalizer_clip"])
         online = QNetwork().to(device)
@@ -311,6 +316,8 @@ def export_policy(config: dict) -> Path:
     payload = torch.load(models / f"ddqn_seed_{seed}.pt", map_location="cpu", weights_only=False)
     if payload["seed"] != seed or payload["config"]["_config_sha256"] != config["_config_sha256"]:
         raise RuntimeError("selected DDQN checkpoint does not match training configuration")
+    if payload.get("dataset_sha256") != dataset_hash(config):
+        raise RuntimeError("selected checkpoint dataset mismatch")
     network = QNetwork()
     network.load_state_dict(payload["online"])
     network.eval()

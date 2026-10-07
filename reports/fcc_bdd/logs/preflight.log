@@ -1,0 +1,7 @@
++ git -C /opt/yolov5 rev-parse HEAD
++ ffmpeg -hide_banner -encoders
++ ffmpeg -hide_banner -filters
++ ffmpeg -version
++ vmaf --version
+CUDA device: Quadro T1000
+Preflight passed: Docker, CUDA, libx264, libvmaf, roi_encoder

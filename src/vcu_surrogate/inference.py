@@ -12,6 +12,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from .assets import assert_downloads
+from .dataset import dataset_hash
 from .common import ROOT, project_path, sha256, stable_hash, write_json
 
 
@@ -115,6 +116,7 @@ def infer_metadata(config: dict) -> None:
         roi_output = metadata_dir / f"{item.video_id}.roi.csv"
         sidecar = metadata_dir / f"{item.video_id}.json"
         job = {
+            "dataset_sha256": dataset_hash(config),
             "reference_sha256": item.reference_sha256,
             "weights_sha256": sha256(ROOT / yolo["weights"]),
             "yolo": yolo,

@@ -1,0 +1,11 @@
+{
+  "additional_reserve_bytes": 60000000000,
+  "available_bytes": 882341412864,
+  "dataset_seconds": 2314.0,
+  "encode_estimate_bytes_with_1_5x_margin": 45123000000,
+  "probe_bytes": 72347515,
+  "probe_elapsed_s": 9.999654059999955,
+  "probe_seconds": 6,
+  "reference_estimate_bytes_with_2x_margin": 55804049903,
+  "required_bytes": 160927049903
+}

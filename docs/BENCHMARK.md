@@ -22,9 +22,23 @@ docker run --rm --gpus all --ipc=host --user "$(id -u):$(id -g)" \
 
 Mặc định đo thêm 3 frame tại offsets `[0,14,29]` trên **mọi GOP và mọi action**. VMAF và ROI metric cũ vẫn dùng tất cả frame. Bộ benchmark bao phủ các chiều đánh giá; mặc định không đo detector trên mọi frame. Chọn 30 nếu cần độ phủ thời gian đầy đủ, đổi lại tăng thời gian GPU/CPU. Frame sampled của reference tạm được lưu bằng mmap rồi xóa sau mỗi video, hạn chế bộ nhớ và tránh decode reference 32 lần. Batch size chỉ điều khiển detector, không thay đổi lịch lấy mẫu.
 
+## Lần chạy FCC/BDD
+
+`scripts/run_fcc_bdd.py` dùng `scripts/prepare_grid_compact.py`: xử lý lần lượt từng video với đủ 32 action, metrics lấy mẫu mỗi 5 frame; sau mỗi hai video hoàn tất metrics, chạy benchmark 3 frame/GOP cho cặp đó rồi tiếp tục. Video cuối lẻ được benchmark sau khi hết phần local. Giữ FFV1, video nguồn, encodes, manifest/checksum, metric frame/GOP và cache benchmark. Stage metrics tổng hợp cache; stage benchmark cuối dùng lại cache đã có và đo những action còn thiếu; train/evaluate dùng các split và cấu hình đã khóa. Tiến độ nằm trong `reports/fcc_bdd/compact_progress.json`.
+
+Không áp dụng giới hạn dung lượng nhân tạo hoặc dừng chờ compact VDisk. Runner tiếp tục đến train/evaluate/export/render/benchmark. `scripts/watch_fcc_bdd_storage.py` chỉ ghi telemetry dung lượng mỗi 5 giây, không dừng container.
+
+Mỗi reference được decode FFV1 một lần sang YUV420 raw, sau đó chuyển YUV thành BGR cache bằng đúng libswscale mà OpenCV dùng. Sáu worker đọc chung hai cache trên SSD. Mỗi action cũng chỉ decode một lần; từng frame YUV đi qua VMAF để giữ ngữ cảnh chuyển động; chỉ frame mẫu chuyển BGR và tính ROI. Luồng pipe chỉ giữ vài frame trong RAM. Test đối chiếu từng pixel BGR và tất cả metric với cách cũ, yêu cầu kết quả bằng nhau.
+
+Kiểm checksum reference, định dạng và số frame trước khi dùng. Cache đầy đủ có checksum YUV/BGR trong `compact_progress.json` để dùng lại sau restart; cache không khớp được tạo lại từ nguồn đã kiểm tra. Sau metrics, xóa cache YUV/BGR; benchmark tạo cache frame sampled riêng rồi xóa. Xóa JSON VMAF sau khi xác minh checksum và coverage metrics của đủ 32 action; giữ parquet frame/GOP để chạy benchmark sau. FFV1 và encode luôn được giữ. Artifact dùng chung `artifacts/`.
+
+ROI SSIM dùng box filter OpenCV float64 với cùng cửa sổ, sample covariance, K1/K2, pooling ba kênh và bỏ viền như skimage; kiểm thử sai số 1e-10. Metrics dùng 6 worker CPU × 2 thread VMAF, không dùng CUDA VMAF, chung hàng đợi action; lấy mẫu mỗi 5 frame (6 mẫu/GOP), giữ ngữ cảnh VMAF đầy đủ; decoder FFmpeg/ROI 2 luồng, filter graph FFmpeg 1 luồng và OpenCV 1 luồng. Resume encode kiểm SHA-256 bitstream thay vì decode lại video đã xác minh. Resume giữ các metrics đã hoàn tất với đúng provenance.
+
+Thử 60 frame thật dưới tải đang chạy: VMAF FFV1 36.73 s, YUV cache 28.86 s; ROI FFV1 238.90 s, BGR cache 103.16 s. Kết quả từng frame giống hệt; đây là đo mẫu dưới tải, chưa phải tốc độ toàn pipeline. Reference của video chưa encode được tạo lại từ nguồn/checksum và cấu hình normalization, cập nhật provenance tương ứng.
+
 ## 1. Chất lượng ROI và non-ROI
 
-Giữ nguyên full-frame VMAF, PSNR/SSIM và ROI PSNR/SSIM của pipeline, bổ sung một định nghĩa nhất quán để so sánh hai vùng:
+VMAF, PSNR/SSIM và ROI PSNR/SSIM của pipeline lấy mẫu mỗi 5 frame. Benchmark giữ cách lấy mẫu riêng và bổ sung một định nghĩa nhất quán để so sánh hai vùng:
 
 - ROI là union của box YOLO gốc trên reference; non-ROI là phần bù của mask ấy. Không dùng padded encoder box vì cần cố định vùng đánh giá giữa các action.
 - Chuyển BGR thành grayscale bằng OpenCV; không gọi grayscale này là chính xác plane Y của bitstream YUV. Tên cột `_y` biểu diễn phép đo luma proxy.
@@ -62,7 +76,7 @@ Các metric bổ sung:
 
 ## 4. Thích ứng bandwidth
 
-Mọi policy dùng cùng episode và warm-up 4 GOP action 4. Test Verizon giữ nguyên tập episode của `GridDataset.evaluation_specs()`, có thể so với rollout DDQN cũ.
+Mọi policy dùng cùng episode và warm-up 4 GOP action 4. Test FCC/Norway giữ nguyên tập episode của `GridDataset.evaluation_specs()`, có thể so với rollout DDQN cũ.
 
 Strategy:
 
@@ -99,6 +113,10 @@ Mô hình không có RTT, loss, socket scheduling, packetization, frame pacing, 
 
 `manifest.json` ghi hash input/code, FPS sampling, hardware/software và elapsed time. Sidecar từng shard ghi hash reference/encode gián tiếp trong job hash và hash kết quả. Đổi weights, config, reference, detection hoặc code làm cache tính lại. Raw encode/reference được xác minh hash với manifest nguồn khi benchmark chạy.
 
-Bộ benchmark vẫn có giới hạn của dataset nguồn: video dùng chung giữa train/test, semantic của GOP hiện tại nhìn toàn GOP, outcome grid từ action cố định không giữ đúng rate-control khi policy switch, chưa có mạng/VCU thật. Kết quả so sánh là trong phạm vi surrogate này.
+Bộ benchmark vẫn có giới hạn của dataset nguồn: video tách độc lập giữa train/test, semantic của GOP hiện tại nhìn toàn GOP, outcome grid từ action cố định không giữ đúng rate-control khi policy switch, chưa có mạng/VCU thật. Kết quả so sánh là trong phạm vi surrogate này.
 
 Sau chạy, `verification.json` ghi các kiểm tra kết quả và test suite. `manifest.elapsed_s` là thời gian lần gọi hoàn tất cuối cùng, có thể đã dùng cache; tổng thời gian đo các shard được ghi riêng trong verification, không phải tổng thời gian wall-clock của toàn phiên làm việc.
+
+Đo CPU + CUDA trên `bdd_114af10f-c3d93b85`: 6 action mới (5 CPU, 1 CUDA), mỗi action 1.200 frame/240 mẫu, hoàn thành trong 210.965 giây, tương đương 102.387 action/giờ, gồm startup worker. CUDA chạy riêng action 0 trong 107.686 giây, VMAF/PSNR/SSIM/ROI trùng hoàn toàn với mẫu CPU đã lưu. Đây là đo một lượt, chưa bao gồm encode, reference cache, benchmark hoặc train.
+
+So sánh cùng 6 action 0–5 của `bdd_16dce9f0-a914a65e`, 1.200 frame/action, stride 5, cùng reference cache và worker fork: CPU 6 × 2 thread đạt 124.030 giây (174.151 action/giờ); CPU 5 × 2 thread + CUDA 1 đạt 122.816 giây (175.873 action/giờ). Sai lệch tốc độ khoảng 1%, chưa chứng minh lợi ích đáng kể của CUDA. Metrics hai lượt đạt parity. CPU được đo trước; chưa tính encode/reference/benchmark và không dùng số đo này để khẳng định tốc độ toàn pipeline.

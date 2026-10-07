@@ -66,4 +66,4 @@ test-native:
 	  -v "$(ROOT):/workspace" -w /workspace $(TEST_IMAGE) \
 	  sh -lc 'PYTHONPATH=/workspace/src python3 -m compileall -q src tests && PYTHONPATH=/workspace/src python3 -m pytest -q tests'
 
-all: preflight download normalize infer encode metrics traces transitions validate train evaluate render-policy
+all: preflight download normalize infer encode metrics traces transitions validate train evaluate export-policy render-policy benchmark

@@ -1,0 +1,1181 @@
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  409.6kB
+Step 1/4 : FROM nvidia/cuda:12.1.1-devel-ubuntu22.04 AS vmaf-cuda-builder
+ ---> 5ed6afba2273
+Step 2/4 : ARG VMAF_CUDA_COMMIT=17a67b238ce0539bdeafdc95961abac64fa16ea8
+ ---> Running in 8bb14772954e
+ ---> Removed intermediate container 8bb14772954e
+ ---> 087927340ed0
+Step 3/4 : RUN apt-get update && apt-get install -y --no-install-recommends     build-essential git meson ninja-build nasm pkg-config python3 xxd && rm -rf /var/lib/apt/lists/*
+ ---> Running in 46872ef6bed2
+Get:1 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64  InRelease [1578 B]
+Get:2 http://security.ubuntu.com/ubuntu jammy-security InRelease [129 kB]
+Get:3 http://archive.ubuntu.com/ubuntu jammy InRelease [270 kB]
+Get:4 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64  Packages [3045 kB]
+Get:5 http://archive.ubuntu.com/ubuntu jammy-updates InRelease [128 kB]
+Get:6 http://security.ubuntu.com/ubuntu jammy-security/multiverse amd64 Packages [84.6 kB]
+Get:7 http://archive.ubuntu.com/ubuntu jammy-backports InRelease [127 kB]
+Get:8 http://security.ubuntu.com/ubuntu jammy-security/restricted amd64 Packages [7907 kB]
+Get:9 http://archive.ubuntu.com/ubuntu jammy/restricted amd64 Packages [164 kB]
+Get:10 http://archive.ubuntu.com/ubuntu jammy/universe amd64 Packages [17.5 MB]
+Get:11 http://security.ubuntu.com/ubuntu jammy-security/main amd64 Packages [4415 kB]
+Get:12 http://security.ubuntu.com/ubuntu jammy-security/universe amd64 Packages [1321 kB]
+Get:13 http://archive.ubuntu.com/ubuntu jammy/main amd64 Packages [1792 kB]
+Get:14 http://archive.ubuntu.com/ubuntu jammy/multiverse amd64 Packages [266 kB]
+Get:15 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 Packages [4747 kB]
+Get:16 http://archive.ubuntu.com/ubuntu jammy-updates/multiverse amd64 Packages [93.2 kB]
+Get:17 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 Packages [8198 kB]
+Get:18 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 Packages [1623 kB]
+Get:19 http://archive.ubuntu.com/ubuntu jammy-backports/universe amd64 Packages [35.6 kB]
+Get:20 http://archive.ubuntu.com/ubuntu jammy-backports/main amd64 Packages [82.9 kB]
+Fetched 51.9 MB in 12s (4408 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+build-essential is already the newest version (12.9ubuntu3).
+build-essential set to manually installed.
+The following additional packages will be installed:
+  git-man libbrotli1 libcurl3-gnutls liberror-perl libexpat1 libglib2.0-0
+  libmpdec3 libnghttp2-14 libpsl5 libpython3-stdlib libpython3.10-minimal
+  libpython3.10-stdlib librtmp1 libssh-4 media-types python3-distutils
+  python3-lib2to3 python3-minimal python3-pkg-resources python3.10
+  python3.10-minimal
+Suggested packages:
+  gettext-base git-daemon-run | git-daemon-sysvinit git-doc git-email git-gui
+  gitk gitweb git-cvs git-mediawiki git-svn python3-doc python3-tk
+  python3-venv python3-setuptools python3.10-venv python3.10-doc
+  binfmt-support
+Recommended packages:
+  less ssh-client libglib2.0-data shared-mime-info xdg-user-dirs publicsuffix
+The following NEW packages will be installed:
+  git git-man libbrotli1 libcurl3-gnutls liberror-perl libexpat1 libglib2.0-0
+  libmpdec3 libnghttp2-14 libpsl5 libpython3-stdlib libpython3.10-minimal
+  libpython3.10-stdlib librtmp1 libssh-4 media-types meson nasm ninja-build
+  pkg-config python3 python3-distutils python3-lib2to3 python3-minimal
+  python3-pkg-resources python3.10 python3.10-minimal xxd
+0 upgraded, 28 newly installed, 0 to remove and 111 not upgraded.
+Need to get 13.8 MB of archives.
+After this operation, 58.3 MB of additional disk space will be used.
+Get:1 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libpython3.10-minimal amd64 3.10.12-1~22.04.18 [817 kB]
+Get:2 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libexpat1 amd64 2.4.7-1ubuntu0.9 [96.9 kB]
+Get:3 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3.10-minimal amd64 3.10.12-1~22.04.18 [2277 kB]
+Get:4 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-minimal amd64 3.10.6-1~22.04.1 [24.3 kB]
+Get:5 http://archive.ubuntu.com/ubuntu jammy/main amd64 media-types all 7.0.0 [25.5 kB]
+Get:6 http://archive.ubuntu.com/ubuntu jammy/main amd64 libmpdec3 amd64 2.5.1-2build2 [86.8 kB]
+Get:7 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libpython3.10-stdlib amd64 3.10.12-1~22.04.18 [1850 kB]
+Get:8 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3.10 amd64 3.10.12-1~22.04.18 [508 kB]
+Get:9 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libpython3-stdlib amd64 3.10.6-1~22.04.1 [6812 B]
+Get:10 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3 amd64 3.10.6-1~22.04.1 [22.8 kB]
+Get:11 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libglib2.0-0 amd64 2.72.4-0ubuntu2.10 [1469 kB]
+Get:12 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-pkg-resources all 59.6.0-1.2ubuntu0.22.04.3 [133 kB]
+Get:13 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 xxd amd64 2:8.2.3995-1ubuntu2.36 [51.5 kB]
+Get:14 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libnghttp2-14 amd64 1.43.0-1ubuntu0.4 [76.9 kB]
+Get:15 http://archive.ubuntu.com/ubuntu jammy/main amd64 libpsl5 amd64 0.21.0-1.2build2 [58.4 kB]
+Get:16 http://archive.ubuntu.com/ubuntu jammy/main amd64 libbrotli1 amd64 1.0.9-2build6 [315 kB]
+Get:17 http://archive.ubuntu.com/ubuntu jammy/main amd64 librtmp1 amd64 2.4+20151223.gitfa8646d.1-2build4 [58.2 kB]
+Get:18 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libssh-4 amd64 0.9.6-2ubuntu0.22.04.8 [189 kB]
+Get:19 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libcurl3-gnutls amd64 7.81.0-1ubuntu1.29 [286 kB]
+Get:20 http://archive.ubuntu.com/ubuntu jammy/main amd64 liberror-perl all 0.17029-1 [26.5 kB]
+Get:21 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 git-man all 1:2.34.1-1ubuntu1.17 [954 kB]
+Get:22 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 git amd64 1:2.34.1-1ubuntu1.17 [3174 kB]
+Get:23 http://archive.ubuntu.com/ubuntu jammy/universe amd64 ninja-build amd64 1.10.1-1 [111 kB]
+Get:24 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-lib2to3 all 3.10.8-1~22.04 [77.6 kB]
+Get:25 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-distutils all 3.10.8-1~22.04 [139 kB]
+Get:26 http://archive.ubuntu.com/ubuntu jammy/universe amd64 meson all 0.61.2-1 [519 kB]
+Get:27 http://archive.ubuntu.com/ubuntu jammy/universe amd64 nasm amd64 2.15.05-1 [375 kB]
+Get:28 http://archive.ubuntu.com/ubuntu jammy/main amd64 pkg-config amd64 0.29.2-1ubuntu3 [48.2 kB]
+[91mdebconf: delaying package configuration, since apt-utils is not installed
+[0mFetched 13.8 MB in 5s (2846 kB/s)
+Selecting previously unselected package libpython3.10-minimal:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 14284 files and directories currently installed.)
+Preparing to unpack .../libpython3.10-minimal_3.10.12-1~22.04.18_amd64.deb ...
+Unpacking libpython3.10-minimal:amd64 (3.10.12-1~22.04.18) ...
+Selecting previously unselected package libexpat1:amd64.
+Preparing to unpack .../libexpat1_2.4.7-1ubuntu0.9_amd64.deb ...
+Unpacking libexpat1:amd64 (2.4.7-1ubuntu0.9) ...
+Selecting previously unselected package python3.10-minimal.
+Preparing to unpack .../python3.10-minimal_3.10.12-1~22.04.18_amd64.deb ...
+Unpacking python3.10-minimal (3.10.12-1~22.04.18) ...
+Setting up libpython3.10-minimal:amd64 (3.10.12-1~22.04.18) ...
+Setting up libexpat1:amd64 (2.4.7-1ubuntu0.9) ...
+Setting up python3.10-minimal (3.10.12-1~22.04.18) ...
+Selecting previously unselected package python3-minimal.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 14588 files and directories currently installed.)
+Preparing to unpack .../0-python3-minimal_3.10.6-1~22.04.1_amd64.deb ...
+Unpacking python3-minimal (3.10.6-1~22.04.1) ...
+Selecting previously unselected package media-types.
+Preparing to unpack .../1-media-types_7.0.0_all.deb ...
+Unpacking media-types (7.0.0) ...
+Selecting previously unselected package libmpdec3:amd64.
+Preparing to unpack .../2-libmpdec3_2.5.1-2build2_amd64.deb ...
+Unpacking libmpdec3:amd64 (2.5.1-2build2) ...
+Selecting previously unselected package libpython3.10-stdlib:amd64.
+Preparing to unpack .../3-libpython3.10-stdlib_3.10.12-1~22.04.18_amd64.deb ...
+Unpacking libpython3.10-stdlib:amd64 (3.10.12-1~22.04.18) ...
+Selecting previously unselected package python3.10.
+Preparing to unpack .../4-python3.10_3.10.12-1~22.04.18_amd64.deb ...
+Unpacking python3.10 (3.10.12-1~22.04.18) ...
+Selecting previously unselected package libpython3-stdlib:amd64.
+Preparing to unpack .../5-libpython3-stdlib_3.10.6-1~22.04.1_amd64.deb ...
+Unpacking libpython3-stdlib:amd64 (3.10.6-1~22.04.1) ...
+Setting up python3-minimal (3.10.6-1~22.04.1) ...
+Selecting previously unselected package python3.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 14989 files and directories currently installed.)
+Preparing to unpack .../00-python3_3.10.6-1~22.04.1_amd64.deb ...
+Unpacking python3 (3.10.6-1~22.04.1) ...
+Selecting previously unselected package libglib2.0-0:amd64.
+Preparing to unpack .../01-libglib2.0-0_2.72.4-0ubuntu2.10_amd64.deb ...
+Unpacking libglib2.0-0:amd64 (2.72.4-0ubuntu2.10) ...
+Selecting previously unselected package python3-pkg-resources.
+Preparing to unpack .../02-python3-pkg-resources_59.6.0-1.2ubuntu0.22.04.3_all.deb ...
+Unpacking python3-pkg-resources (59.6.0-1.2ubuntu0.22.04.3) ...
+Selecting previously unselected package xxd.
+Preparing to unpack .../03-xxd_2%3a8.2.3995-1ubuntu2.36_amd64.deb ...
+Unpacking xxd (2:8.2.3995-1ubuntu2.36) ...
+Selecting previously unselected package libnghttp2-14:amd64.
+Preparing to unpack .../04-libnghttp2-14_1.43.0-1ubuntu0.4_amd64.deb ...
+Unpacking libnghttp2-14:amd64 (1.43.0-1ubuntu0.4) ...
+Selecting previously unselected package libpsl5:amd64.
+Preparing to unpack .../05-libpsl5_0.21.0-1.2build2_amd64.deb ...
+Unpacking libpsl5:amd64 (0.21.0-1.2build2) ...
+Selecting previously unselected package libbrotli1:amd64.
+Preparing to unpack .../06-libbrotli1_1.0.9-2build6_amd64.deb ...
+Unpacking libbrotli1:amd64 (1.0.9-2build6) ...
+Selecting previously unselected package librtmp1:amd64.
+Preparing to unpack .../07-librtmp1_2.4+20151223.gitfa8646d.1-2build4_amd64.deb ...
+Unpacking librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2build4) ...
+Selecting previously unselected package libssh-4:amd64.
+Preparing to unpack .../08-libssh-4_0.9.6-2ubuntu0.22.04.8_amd64.deb ...
+Unpacking libssh-4:amd64 (0.9.6-2ubuntu0.22.04.8) ...
+Selecting previously unselected package libcurl3-gnutls:amd64.
+Preparing to unpack .../09-libcurl3-gnutls_7.81.0-1ubuntu1.29_amd64.deb ...
+Unpacking libcurl3-gnutls:amd64 (7.81.0-1ubuntu1.29) ...
+Selecting previously unselected package liberror-perl.
+Preparing to unpack .../10-liberror-perl_0.17029-1_all.deb ...
+Unpacking liberror-perl (0.17029-1) ...
+Selecting previously unselected package git-man.
+Preparing to unpack .../11-git-man_1%3a2.34.1-1ubuntu1.17_all.deb ...
+Unpacking git-man (1:2.34.1-1ubuntu1.17) ...
+Selecting previously unselected package git.
+Preparing to unpack .../12-git_1%3a2.34.1-1ubuntu1.17_amd64.deb ...
+Unpacking git (1:2.34.1-1ubuntu1.17) ...
+Selecting previously unselected package ninja-build.
+Preparing to unpack .../13-ninja-build_1.10.1-1_amd64.deb ...
+Unpacking ninja-build (1.10.1-1) ...
+Selecting previously unselected package python3-lib2to3.
+Preparing to unpack .../14-python3-lib2to3_3.10.8-1~22.04_all.deb ...
+Unpacking python3-lib2to3 (3.10.8-1~22.04) ...
+Selecting previously unselected package python3-distutils.
+Preparing to unpack .../15-python3-distutils_3.10.8-1~22.04_all.deb ...
+Unpacking python3-distutils (3.10.8-1~22.04) ...
+Selecting previously unselected package meson.
+Preparing to unpack .../16-meson_0.61.2-1_all.deb ...
+Unpacking meson (0.61.2-1) ...
+Selecting previously unselected package nasm.
+Preparing to unpack .../17-nasm_2.15.05-1_amd64.deb ...
+Unpacking nasm (2.15.05-1) ...
+Selecting previously unselected package pkg-config.
+Preparing to unpack .../18-pkg-config_0.29.2-1ubuntu3_amd64.deb ...
+Unpacking pkg-config (0.29.2-1ubuntu3) ...
+Setting up media-types (7.0.0) ...
+Setting up libpsl5:amd64 (0.21.0-1.2build2) ...
+Setting up libglib2.0-0:amd64 (2.72.4-0ubuntu2.10) ...
+No schema files found: doing nothing.
+Setting up libbrotli1:amd64 (1.0.9-2build6) ...
+Setting up libnghttp2-14:amd64 (1.43.0-1ubuntu0.4) ...
+Setting up xxd (2:8.2.3995-1ubuntu2.36) ...
+Setting up ninja-build (1.10.1-1) ...
+Setting up liberror-perl (0.17029-1) ...
+Setting up librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2build4) ...
+Setting up pkg-config (0.29.2-1ubuntu3) ...
+Setting up nasm (2.15.05-1) ...
+Setting up libssh-4:amd64 (0.9.6-2ubuntu0.22.04.8) ...
+Setting up libmpdec3:amd64 (2.5.1-2build2) ...
+Setting up git-man (1:2.34.1-1ubuntu1.17) ...
+Setting up libcurl3-gnutls:amd64 (7.81.0-1ubuntu1.29) ...
+Setting up libpython3.10-stdlib:amd64 (3.10.12-1~22.04.18) ...
+Setting up git (1:2.34.1-1ubuntu1.17) ...
+Setting up libpython3-stdlib:amd64 (3.10.6-1~22.04.1) ...
+Setting up python3.10 (3.10.12-1~22.04.18) ...
+Setting up python3 (3.10.6-1~22.04.1) ...
+running python rtupdate hooks for python3.10...
+running python post-rtupdate hooks for python3.10...
+Setting up python3-lib2to3 (3.10.8-1~22.04) ...
+Setting up python3-pkg-resources (59.6.0-1.2ubuntu0.22.04.3) ...
+Setting up python3-distutils (3.10.8-1~22.04) ...
+Setting up meson (0.61.2-1) ...
+Processing triggers for libc-bin (2.35-0ubuntu3.4) ...
+ ---> Removed intermediate container 46872ef6bed2
+ ---> ec2ba083d0df
+Step 4/4 : RUN git init /tmp/vmaf && git -C /tmp/vmaf remote add origin https://github.com/Netflix/vmaf.git &&     git -C /tmp/vmaf fetch --depth 1 origin "${VMAF_CUDA_COMMIT}" &&     git -C /tmp/vmaf checkout --detach FETCH_HEAD &&     test "$(git -C /tmp/vmaf rev-parse HEAD)" = "${VMAF_CUDA_COMMIT}" &&     meson setup /tmp/vmaf/libvmaf/build /tmp/vmaf/libvmaf       --prefix=/opt/vmaf-cuda --libdir=lib --buildtype=release       -Denable_cuda=true -Denable_tests=false -Denable_docs=false -Dbuilt_in_models=true &&     meson compile -C /tmp/vmaf/libvmaf/build -j 4 && meson install -C /tmp/vmaf/libvmaf/build
+ ---> Running in 706ef4136d2d
+[91mhint: Using 'master' as the name for the initial branch. This default branch name
+hint: is subject to change. To configure the initial branch name to use in all
+hint: of your new repositories, which will suppress this warning, call:
+hint: 
+hint: 	git config --global init.defaultBranch <name>
+hint: 
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint: 
+hint: 	git branch -m <name>
+[0mInitialized empty Git repository in /tmp/vmaf/.git/
+[91mFrom https://github.com/Netflix/vmaf
+ * branch            17a67b238ce0539bdeafdc95961abac64fa16ea8 -> FETCH_HEAD
+[0m[91mHEAD is now at 17a67b2 libvmaf: v3.0.0
+[0mThe Meson build system
+Version: 0.61.2
+Source dir: /tmp/vmaf/libvmaf
+Build dir: /tmp/vmaf/libvmaf/build
+Build type: native build
+Project name: libvmaf
+Project version: 3.0.0
+C compiler for the host machine: cc (gcc 11.4.0 "cc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0")
+C linker for the host machine: cc ld.bfd 2.38
+C++ compiler for the host machine: c++ (gcc 11.4.0 "c++ (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0")
+C++ linker for the host machine: c++ ld.bfd 2.38
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Check usable header "stdatomic.h" : YES 
+Configuring version.h using configuration
+Program nasm found: YES (/usr/bin/nasm)
+Configuring config.asm using configuration
+Program xxd found: YES (/usr/bin/xxd)
+Run-time dependency CUDA (modules: cudart) found: YES 12.1 (/usr/local/cuda)
+tmp/vmaf/libvmaf/src/meson.build:168: WARNING: add_languages is missing native:, assuming languages are wanted for both host and build.
+Cuda compiler for the host machine: nvcc (nvcc 12.1.105
+Build cuda_12.1.r12.1/compiler.32688072_0)
+Cuda linker for the host machine: nvcc nvlink 12.1.105
+Build cuda_12.1.r12.1/compiler.32688072_0
+Configuring config.h using configuration
+Message: {'adm_dwt2' : ['./feature/cuda/integer_adm/adm_dwt2.cu'], 'adm_cm' : ['./feature/cuda/integer_adm/adm_cm.cu'], 'adm_csf' : ['./feature/cuda/integer_adm/adm_csf.cu'], 'adm_csf_den' : ['./feature/cuda/integer_adm/adm_csf_den.cu'], 'adm_decouple' : ['./feature/cuda/integer_adm/adm_decouple.cu'], 'filter1d' : ['./feature/cuda/integer_vif/filter1d.cu'], 'motion_score' : ['./feature/cuda/integer_motion/motion_score.cu']}
+Dependency cuda found: YES 12.1 (cached)
+Program nvcc found: YES (/usr/local/cuda/bin/nvcc)
+Message: ptx_files = {'adm_dwt2': [<CustomTarget 25a6634@@cu_ptx_target_adm_dwt2@cus: ['/usr/local/cuda/bin/nvcc', '--ptx', '@INPUT@', '-o', '@OUTPUT@', '-I', './src', '-I', '../src', '-I', '../include', '-I', '../src/feature', '-I', '../src/./cuda/']>], 'adm_cm': [<CustomTarget 25a6634@@cu_ptx_target_adm_cm@cus: ['/usr/local/cuda/bin/nvcc', '--ptx', '@INPUT@', '-o', '@OUTPUT@', '-I', './src', '-I', '../src', '-I', '../include', '-I', '../src/feature', '-I', '../src/./cuda/']>], 'adm_csf': [<CustomTarget 25a6634@@cu_ptx_target_adm_csf@cus: ['/usr/local/cuda/bin/nvcc', '--ptx', '@INPUT@', '-o', '@OUTPUT@', '-I', './src', '-I', '../src', '-I', '../include', '-I', '../src/feature', '-I', '../src/./cuda/']>], 'adm_csf_den': [<CustomTarget 25a6634@@cu_ptx_target_adm_csf_den@cus: ['/usr/local/cuda/bin/nvcc', '--ptx', '@INPUT@', '-o', '@OUTPUT@', '-I', './src', '-I', '../src', '-I', '../include', '-I', '../src/feature', '-I', '../src/./cuda/']>], 'adm_decouple': [<CustomTarget 25a6634@@cu_ptx_target_adm_decouple@cus: ['/usr/local/cuda/bin/nvcc', '--ptx', '@INPUT@', '-o', '@OUTPUT@', '-I', './src', '-I', '../src', '-I', '../include', '-I', '../src/feature', '-I', '../src/./cuda/']>], 'filter1d': [<CustomTarget 25a6634@@cu_ptx_target_filter1d@cus: ['/usr/local/cuda/bin/nvcc', '--ptx', '@INPUT@', '-o', '@OUTPUT@', '-I', './src', '-I', '../src', '-I', '../include', '-I', '../src/feature', '-I', '../src/./cuda/']>], 'motion_score': [<CustomTarget 25a6634@@cu_ptx_target_motion_score@cus: ['/usr/local/cuda/bin/nvcc', '--ptx', '@INPUT@', '-o', '@OUTPUT@', '-I', './src', '-I', '../src', '-I', '../include', '-I', '../src/feature', '-I', '../src/./cuda/']>]}
+Program xxd found: YES (/usr/bin/xxd)
+Message: ptx_arrays = [<CustomTarget 25a6634@@ptx_xxd_adm_dwt2@cus: ['/usr/bin/xxd', '--include', '@INPUT@', '@OUTPUT@']>, <CustomTarget 25a6634@@ptx_xxd_adm_cm@cus: ['/usr/bin/xxd', '--include', '@INPUT@', '@OUTPUT@']>, <CustomTarget 25a6634@@ptx_xxd_adm_csf@cus: ['/usr/bin/xxd', '--include', '@INPUT@', '@OUTPUT@']>, <CustomTarget 25a6634@@ptx_xxd_adm_csf_den@cus: ['/usr/bin/xxd', '--include', '@INPUT@', '@OUTPUT@']>, <CustomTarget 25a6634@@ptx_xxd_adm_decouple@cus: ['/usr/bin/xxd', '--include', '@INPUT@', '@OUTPUT@']>, <CustomTarget 25a6634@@ptx_xxd_filter1d@cus: ['/usr/bin/xxd', '--include', '@INPUT@', '@OUTPUT@']>, <CustomTarget 25a6634@@ptx_xxd_motion_score@cus: ['/usr/bin/xxd', '--include', '@INPUT@', '@OUTPUT@']>]
+WARNING: extract_all_objects called without setting recursive
+keyword argument. Meson currently defaults to
+non-recursive to maintain backward compatibility but
+the default will be changed in the future.
+
+Run-time dependency threads found: YES
+Library m found: YES
+Checking for function "strsep" : YES 
+Program test_vmaf_cuda_gpumask.sh found: YES (/tmp/vmaf/libvmaf/tools/test/test_vmaf_cuda_gpumask.sh)
+Build targets in project: 28
+
+libvmaf 3.0.0
+
+  User defined options
+    buildtype      : release
+    libdir         : lib
+    prefix         : /opt/vmaf-cuda
+    built_in_models: true
+    enable_cuda    : true
+    enable_docs    : false
+    enable_tests   : false
+
+Found ninja-1.10.1 at /usr/bin/ninja
+ninja: Entering directory `/tmp/vmaf/libvmaf/build'
+[1/107] Generating src/vmaf_v0.6.1neg.json with a custom command
+[2/107] Generating src/vmaf_v0.6.1.json with a custom command
+[3/107] Generating src/vmaf_4k_v0.6.1neg.json with a custom command
+[4/107] Generating src/vmaf_4k_v0.6.1.json with a custom command
+[5/107] Generating src/vmaf_b_v0.6.3.json with a custom command
+[6/107] Compiling C object src/liblibvmaf_cpu.a.p/cpu.c.o
+[7/107] Generating 'src/liblibvmaf_cpu.a.p/cpuid.obj'.
+[8/107] Compiling C object src/liblibvmaf_cpu.a.p/x86_cpu.c.o
+[9/107] Linking static target src/liblibvmaf_cpu.a
+[10/107] Generating include/vcs_version.h with a custom command
+[11/107] Compiling C object src/libx86_avx2.a.p/feature_x86_motion_avx2.c.o
+In file included from ../src/feature/x86/motion_avx2.c:23:
+../src/feature/integer_motion.h: In function ‘edge_16’:
+../src/feature/integer_motion.h:37:34: warning: operand of ‘?:’ changes signedness from ‘int’ to ‘unsigned int’ due to unsignedness of other operand [-Wsign-compare]
+   37 |         int i_tap = horizontal ? i : i - radius + k;
+      |                                  ^
+../src/feature/integer_motion.h:38:51: warning: operand of ‘?:’ changes signedness from ‘int’ to ‘unsigned int’ due to unsignedness of other operand [-Wsign-compare]
+   38 |         int j_tap = horizontal ? j - radius + k : j;
+      |                                                   ^
+[12/107] Compiling C object src/libx86_avx2.a.p/feature_x86_adm_avx2.c.o
+[13/107] Compiling C object src/libx86_avx2.a.p/feature_x86_cambi_avx2.c.o
+[14/107] Compiling C object src/libx86_avx2.a.p/feature_common_convolution_avx.c.o
+[15/107] Compiling C object src/libx86_avx2.a.p/feature_x86_vif_avx2.c.o
+../src/feature/x86/vif_avx2.c: In function ‘vif_statistic_16_avx2’:
+../src/feature/x86/vif_avx2.c:556:33: warning: variable ‘shift_HP’ set but not used [-Wunused-but-set-variable]
+  556 |     int32_t add_shift_round_HP, shift_HP;
+      |                                 ^~~~~~~~
+../src/feature/x86/vif_avx2.c:556:13: warning: variable ‘add_shift_round_HP’ set but not used [-Wunused-but-set-variable]
+  556 |     int32_t add_shift_round_HP, shift_HP;
+      |             ^~~~~~~~~~~~~~~~~~
+[16/107] Linking static target src/libx86_avx2.a
+[17/107] Compiling C object src/libx86_avx512.a.p/feature_x86_motion_avx512.c.o
+In file included from ../src/feature/x86/motion_avx512.c:25:
+../src/feature/integer_motion.h: In function ‘edge_16’:
+../src/feature/integer_motion.h:37:34: warning: operand of ‘?:’ changes signedness from ‘int’ to ‘unsigned int’ due to unsignedness of other operand [-Wsign-compare]
+   37 |         int i_tap = horizontal ? i : i - radius + k;
+      |                                  ^
+../src/feature/integer_motion.h:38:51: warning: operand of ‘?:’ changes signedness from ‘int’ to ‘unsigned int’ due to unsignedness of other operand [-Wsign-compare]
+   38 |         int j_tap = horizontal ? j - radius + k : j;
+      |                                                   ^
+../src/feature/x86/motion_avx512.c: In function ‘x_convolution_16_avx512’:
+../src/feature/x86/motion_avx512.c:39:15: warning: unused variable ‘tmpdst’ [-Wunused-variable]
+   39 |     uint16_t *tmpdst = dst;
+      |               ^~~~~~
+[18/107] Generating src/cu_ptx_target_adm_csf with a custom command
+../src/./feature/cuda/integer_adm/adm_csf.cu(73): warning #68-D: integer conversion resulted in a change of sign
+      const int32_t add_bef_shift_flt = (1u << (shift_flt - 1));
+                                        ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+[19/107] Generating src/cu_ptx_target_adm_dwt2 with a custom command
+[20/107] Compiling C object src/libx86_avx512.a.p/feature_x86_vif_avx512.c.o
+../src/feature/x86/vif_avx512.c: In function ‘vif_statistic_8_avx512’:
+../src/feature/x86/vif_avx512.c:205:32: warning: unused variable ‘dis’ [-Wunused-variable]
+  205 |                 const uint8_t *dis = (uint8_t*)buf.dis;
+      |                                ^~~
+../src/feature/x86/vif_avx512.c:204:32: warning: unused variable ‘ref’ [-Wunused-variable]
+  204 |                 const uint8_t *ref = (uint8_t*)buf.ref;
+      |                                ^~~
+../src/feature/x86/vif_avx512.c:188:28: warning: unused variable ‘dis’ [-Wunused-variable]
+  188 |             const uint8_t *dis = (uint8_t*)buf.dis;
+      |                            ^~~
+../src/feature/x86/vif_avx512.c:187:28: warning: unused variable ‘ref’ [-Wunused-variable]
+  187 |             const uint8_t *ref = (uint8_t*)buf.ref;
+      |                            ^~~
+../src/feature/x86/vif_avx512.c:265:25: warning: unused variable ‘dst_stride’ [-Wunused-variable]
+  265 |         const ptrdiff_t dst_stride = buf.stride_32 / sizeof(uint32_t);
+      |                         ^~~~~~~~~~
+../src/feature/x86/vif_avx512.c:163:26: warning: unused variable ‘sigma_nsq’ [-Wunused-variable]
+  163 |     static const int32_t sigma_nsq = 65536 << 1;
+      |                          ^~~~~~~~~
+../src/feature/x86/vif_avx512.c:149:20: warning: unused variable ‘dis’ [-Wunused-variable]
+  149 |     const uint8_t *dis = (uint8_t*)buf.dis;
+      |                    ^~~
+../src/feature/x86/vif_avx512.c:148:20: warning: unused variable ‘ref’ [-Wunused-variable]
+  148 |     const uint8_t *ref = (uint8_t*)buf.ref;
+      |                    ^~~
+../src/feature/x86/vif_avx512.c: In function ‘vif_statistic_16_avx512’:
+../src/feature/x86/vif_avx512.c:454:32: warning: comparison of integer expressions of different signedness: ‘unsigned int’ and ‘int’ [-Wsign-compare]
+  454 |         for (unsigned j = 0; j < n << 5; j = j + 32)
+      |                                ^
+../src/feature/x86/vif_avx512.c:470:32: warning: unused variable ‘fcoeff’ [-Wunused-variable]
+  470 |                 const uint16_t fcoeff = vif_filt[fi];
+      |                                ^~~~~~
+../src/feature/x86/vif_avx512.c:628:32: warning: comparison of integer expressions of different signedness: ‘unsigned int’ and ‘int’ [-Wsign-compare]
+  628 |         for (unsigned j = 0; j < n << 4; j = j + 16)
+      |                                ^
+../src/feature/x86/vif_avx512.c:743:22: warning: comparison of integer expressions of different signedness: ‘int’ and ‘unsigned int’ [-Wsign-compare]
+  743 |         if ((n << 4) != w) {
+      |                      ^~
+../src/feature/x86/vif_avx512.c:413:26: warning: unused variable ‘sigma_nsq’ [-Wunused-variable]
+  413 |     static const int32_t sigma_nsq = 65536 << 1;
+      |                          ^~~~~~~~~
+../src/feature/x86/vif_avx512.c:405:33: warning: variable ‘shift_HP’ set but not used [-Wunused-but-set-variable]
+  405 |     int32_t add_shift_round_HP, shift_HP;
+      |                                 ^~~~~~~~
+../src/feature/x86/vif_avx512.c:405:13: warning: variable ‘add_shift_round_HP’ set but not used [-Wunused-but-set-variable]
+  405 |     int32_t add_shift_round_HP, shift_HP;
+      |             ^~~~~~~~~~~~~~~~~~
+../src/feature/x86/vif_avx512.c:401:21: warning: unused variable ‘dst_stride’ [-Wunused-variable]
+  401 |     const ptrdiff_t dst_stride = buf.stride_32 / sizeof(uint32_t);
+      |                     ^~~~~~~~~~
+../src/feature/x86/vif_avx512.c: In function ‘vif_subsample_rd_8_avx512’:
+../src/feature/x86/vif_avx512.c:820:32: warning: comparison of integer expressions of different signedness: ‘unsigned int’ and ‘int’ [-Wsign-compare]
+  820 |         for (unsigned j = 0; j < n << 5; j = j + 32)
+      |                                ^
+../src/feature/x86/vif_avx512.c:954:32: warning: comparison of integer expressions of different signedness: ‘unsigned int’ and ‘int’ [-Wsign-compare]
+  954 |         for (unsigned j = 0; j < n << 4; j = j + 16)
+      |                                ^
+../src/feature/x86/vif_avx512.c:782:9: warning: unused variable ‘fwidth_x’ [-Wunused-variable]
+  782 |     int fwidth_x = (fwidth % 2 == 0) ? fwidth : fwidth + 1;
+      |         ^~~~~~~~
+../src/feature/x86/vif_avx512.c: In function ‘vif_subsample_rd_16_avx512’:
+../src/feature/x86/vif_avx512.c:1154:32: warning: comparison of integer expressions of different signedness: ‘unsigned int’ and ‘int’ [-Wsign-compare]
+ 1154 |         for (unsigned j = 0; j < n << 4; j = j + 32)
+      |                                ^
+../src/feature/x86/vif_avx512.c:1164:32: warning: unused variable ‘fcoeff’ [-Wunused-variable]
+ 1164 |                 const uint16_t fcoeff = vif_filt[fi];
+      |                                ^~~~~~
+../src/feature/x86/vif_avx512.c:1223:32: warning: comparison of integer expressions of different signedness: ‘unsigned int’ and ‘int’ [-Wsign-compare]
+ 1223 |         for (unsigned j = 0; j < n << 4; j = j + 16)
+      |                                ^
+../src/feature/x86/vif_avx512.c:1230:29: warning: unused variable ‘dis’ [-Wunused-variable]
+ 1230 |             const uint16_t *dis = (uint16_t *)buf.dis;
+      |                             ^~~
+../src/feature/x86/vif_avx512.c:1229:29: warning: unused variable ‘ref’ [-Wunused-variable]
+ 1229 |             const uint16_t *ref = (uint16_t *)buf.tmp.ref_convol;
+      |                             ^~~
+At top level:
+../src/feature/x86/vif_avx512.c:413:26: warning: ‘sigma_nsq’ defined but not used [-Wunused-const-variable=]
+  413 |     static const int32_t sigma_nsq = 65536 << 1;
+      |                          ^~~~~~~~~
+../src/feature/x86/vif_avx512.c:163:26: warning: ‘sigma_nsq’ defined but not used [-Wunused-const-variable=]
+  163 |     static const int32_t sigma_nsq = 65536 << 1;
+      |                          ^~~~~~~~~
+[21/107] Linking static target src/libx86_avx512.a
+[22/107] Generating src/cu_ptx_target_adm_cm with a custom command
+../src/./feature/cuda/integer_adm/adm_cm.cu(52): warning #68-D: integer conversion resulted in a change of sign
+          const int32_t add_bef_shift_flt = (1u << (shift_flt - 1));
+                                            ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+[23/107] Generating src/cu_ptx_target_adm_csf_den with a custom command
+[24/107] Generating src/ptx_xxd_adm_dwt2 with a custom command
+[25/107] Generating src/ptx_xxd_adm_cm with a custom command
+[26/107] Generating src/ptx_xxd_adm_csf with a custom command
+[27/107] Generating src/ptx_xxd_adm_csf_den with a custom command
+[28/107] Compiling C object src/libcuda_common_vmaf_lib.a.p/meson-generated_.._adm_dwt2.ptx.c.o
+[29/107] Generating src/cu_ptx_target_adm_decouple with a custom command
+[30/107] Generating src/ptx_xxd_adm_decouple with a custom command
+[31/107] Compiling C object src/libcuda_common_vmaf_lib.a.p/meson-generated_.._adm_csf.ptx.c.o
+[32/107] Compiling C object src/libcuda_common_vmaf_lib.a.p/meson-generated_.._adm_cm.ptx.c.o
+[33/107] Compiling C object src/libcuda_common_vmaf_lib.a.p/meson-generated_.._adm_decouple.ptx.c.o
+[34/107] Compiling C object src/libcuda_common_vmaf_lib.a.p/meson-generated_.._adm_csf_den.ptx.c.o
+[35/107] Compiling C object src/libcuda_common_vmaf_lib.a.p/cuda_common.c.o
+[36/107] Compiling C object src/libcuda_common_vmaf_lib.a.p/cuda_picture_cuda.c.o
+../src/cuda/picture_cuda.c: In function ‘vmaf_cuda_picture_download_async’:
+../src/cuda/picture_cuda.c:44:21: warning: assignment to ‘CUdeviceptr’ {aka ‘long long unsigned int’} from ‘void *’ makes integer from pointer without a cast [-Wint-conversion]
+   44 |         m.srcDevice = cuda_pic->data[i];
+      |                     ^
+../src/cuda/picture_cuda.c: In function ‘vmaf_cuda_picture_upload_async’:
+../src/cuda/picture_cuda.c:71:21: warning: assignment to ‘CUdeviceptr’ {aka ‘long long unsigned int’} from ‘void *’ makes integer from pointer without a cast [-Wint-conversion]
+   71 |         m.dstDevice = cuda_pic->data[i];
+      |                     ^
+../src/cuda/picture_cuda.c: In function ‘default_release_pinned_picture’:
+../src/cuda/picture_cuda.c:85:67: warning: unused parameter ‘cookie’ [-Wunused-parameter]
+   85 | static int default_release_pinned_picture(VmafPicture *pic, void *cookie)
+      |                                                             ~~~~~~^~~~~~
+../src/cuda/picture_cuda.c: In function ‘vmaf_cuda_picture_alloc_pinned’:
+../src/cuda/picture_cuda.c:148:12: warning: implicit declaration of function ‘vmaf_ref_init’; did you mean ‘vmaf_init’? [-Wimplicit-function-declaration]
+  148 |     err |= vmaf_ref_init(&pic->ref);
+      |            ^~~~~~~~~~~~~
+      |            vmaf_init
+In file included from ../src/cuda/common.h:33,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+../src/cuda/picture_cuda.c: In function ‘vmaf_cuda_picture_alloc’:
+../src/cuda/picture_cuda.c:200:36: warning: passing argument 1 of ‘cuMemAllocPitch_v2’ from incompatible pointer type [-Wincompatible-pointer-types]
+  200 |         CHECK_CUDA(cuMemAllocPitch(&pic->data[i], &pic->stride[i],
+      |                                    ^~~~~~~~~~~~~
+      |                                    |
+      |                                    void **
+../src/cuda/cuda_helper.cuh:34:29: note: in definition of macro ‘CHECK_CUDA’
+   34 |         if (CUDA_SUCCESS != CALL) {                                            \
+      |                             ^~~~
+In file included from ../src/picture.h:23,
+                 from ../src/cuda/common.h:27,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+/usr/local/cuda/include/cuda.h:7538:47: note: expected ‘CUdeviceptr *’ {aka ‘long long unsigned int *’} but argument is of type ‘void **’
+ 7538 | CUresult CUDAAPI cuMemAllocPitch(CUdeviceptr *dptr, size_t *pPitch, size_t WidthInBytes, size_t Height, unsigned int ElementSizeBytes);
+      |                                  ~~~~~~~~~~~~~^~~~
+In file included from ../src/cuda/common.h:33,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+../src/cuda/picture_cuda.c:200:51: warning: pointer targets in passing argument 2 of ‘cuMemAllocPitch_v2’ differ in signedness [-Wpointer-sign]
+  200 |         CHECK_CUDA(cuMemAllocPitch(&pic->data[i], &pic->stride[i],
+      |                                                   ^~~~~~~~~~~~~~~
+      |                                                   |
+      |                                                   ptrdiff_t * {aka long int *}
+../src/cuda/cuda_helper.cuh:34:29: note: in definition of macro ‘CHECK_CUDA’
+   34 |         if (CUDA_SUCCESS != CALL) {                                            \
+      |                             ^~~~
+In file included from ../src/picture.h:23,
+                 from ../src/cuda/common.h:27,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+/usr/local/cuda/include/cuda.h:7538:61: note: expected ‘size_t *’ {aka ‘long unsigned int *’} but argument is of type ‘ptrdiff_t *’ {aka ‘long int *’}
+ 7538 | CUresult CUDAAPI cuMemAllocPitch(CUdeviceptr *dptr, size_t *pPitch, size_t WidthInBytes, size_t Height, unsigned int ElementSizeBytes);
+      |                                                     ~~~~~~~~^~~~~~
+In file included from ../src/cuda/common.h:33,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+../src/cuda/picture_cuda.c:200:36: warning: passing argument 1 of ‘cuMemAllocPitch_v2’ from incompatible pointer type [-Wincompatible-pointer-types]
+  200 |         CHECK_CUDA(cuMemAllocPitch(&pic->data[i], &pic->stride[i],
+      |                                    ^~~~~~~~~~~~~
+      |                                    |
+      |                                    void **
+../src/cuda/cuda_helper.cuh:36:34: note: in definition of macro ‘CHECK_CUDA’
+   36 |             const CUresult err = CALL;                                         \
+      |                                  ^~~~
+In file included from ../src/picture.h:23,
+                 from ../src/cuda/common.h:27,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+/usr/local/cuda/include/cuda.h:7538:47: note: expected ‘CUdeviceptr *’ {aka ‘long long unsigned int *’} but argument is of type ‘void **’
+ 7538 | CUresult CUDAAPI cuMemAllocPitch(CUdeviceptr *dptr, size_t *pPitch, size_t WidthInBytes, size_t Height, unsigned int ElementSizeBytes);
+      |                                  ~~~~~~~~~~~~~^~~~
+In file included from ../src/cuda/common.h:33,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+../src/cuda/picture_cuda.c:200:51: warning: pointer targets in passing argument 2 of ‘cuMemAllocPitch_v2’ differ in signedness [-Wpointer-sign]
+  200 |         CHECK_CUDA(cuMemAllocPitch(&pic->data[i], &pic->stride[i],
+      |                                                   ^~~~~~~~~~~~~~~
+      |                                                   |
+      |                                                   ptrdiff_t * {aka long int *}
+../src/cuda/cuda_helper.cuh:36:34: note: in definition of macro ‘CHECK_CUDA’
+   36 |             const CUresult err = CALL;                                         \
+      |                                  ^~~~
+In file included from ../src/picture.h:23,
+                 from ../src/cuda/common.h:27,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+/usr/local/cuda/include/cuda.h:7538:61: note: expected ‘size_t *’ {aka ‘long unsigned int *’} but argument is of type ‘ptrdiff_t *’ {aka ‘long int *’}
+ 7538 | CUresult CUDAAPI cuMemAllocPitch(CUdeviceptr *dptr, size_t *pPitch, size_t WidthInBytes, size_t Height, unsigned int ElementSizeBytes);
+      |                                                     ~~~~~~~~^~~~~~
+../src/cuda/picture_cuda.c: In function ‘vmaf_cuda_picture_free’:
+../src/cuda/picture_cuda.c:216:15: warning: implicit declaration of function ‘vmaf_ref_load’; did you mean ‘vmaf_model_load’? [-Wimplicit-function-declaration]
+  216 |     int err = vmaf_ref_load(pic->ref);
+      |               ^~~~~~~~~~~~~
+      |               vmaf_model_load
+../src/cuda/picture_cuda.c:217:15: warning: statement with no effect [-Wunused-value]
+  217 |     if (!err) -EINVAL;
+      |               ^
+In file included from ../src/cuda/common.h:33,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+../src/cuda/picture_cuda.c:226:56: warning: passing argument 1 of ‘cuMemFreeAsync’ makes integer from pointer without a cast [-Wint-conversion]
+  226 |                     CHECK_CUDA(cuMemFreeAsync(pic->data[i], priv->cuda.str));
+      |                                               ~~~~~~~~~^~~
+      |                                                        |
+      |                                                        void *
+../src/cuda/cuda_helper.cuh:34:29: note: in definition of macro ‘CHECK_CUDA’
+   34 |         if (CUDA_SUCCESS != CALL) {                                            \
+      |                             ^~~~
+In file included from ../src/picture.h:23,
+                 from ../src/cuda/common.h:27,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+/usr/local/cuda/include/cuda.h:11682:45: note: expected ‘CUdeviceptr’ {aka ‘long long unsigned int’} but argument is of type ‘void *’
+11682 | CUresult CUDAAPI cuMemFreeAsync(CUdeviceptr dptr, CUstream hStream);
+      |                                 ~~~~~~~~~~~~^~~~
+In file included from ../src/cuda/common.h:33,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+../src/cuda/picture_cuda.c:226:56: warning: passing argument 1 of ‘cuMemFreeAsync’ makes integer from pointer without a cast [-Wint-conversion]
+  226 |                     CHECK_CUDA(cuMemFreeAsync(pic->data[i], priv->cuda.str));
+      |                                               ~~~~~~~~~^~~
+      |                                                        |
+      |                                                        void *
+../src/cuda/cuda_helper.cuh:36:34: note: in definition of macro ‘CHECK_CUDA’
+   36 |             const CUresult err = CALL;                                         \
+      |                                  ^~~~
+In file included from ../src/picture.h:23,
+                 from ../src/cuda/common.h:27,
+                 from ../src/cuda/picture_cuda.h:23,
+                 from ../src/cuda/picture_cuda.c:22:
+/usr/local/cuda/include/cuda.h:11682:45: note: expected ‘CUdeviceptr’ {aka ‘long long unsigned int’} but argument is of type ‘void *’
+11682 | CUresult CUDAAPI cuMemFreeAsync(CUdeviceptr dptr, CUstream hStream);
+      |                                 ~~~~~~~~~~~~^~~~
+[37/107] Compiling C object src/libcuda_common_vmaf_lib.a.p/cuda_ring_buffer.c.o
+[38/107] Generating src/cu_ptx_target_motion_score with a custom command
+../src/./feature/cuda/integer_motion/motion_score.cu(60): warning #1143-D: arithmetic on pointer to void or function type
+                  blurred_y += filter_d[yf] * reinterpret_cast<const uint8_t*>(src.data[0] + mirror(y-radius+yf, height) * src.stride[0])[mirror(x-radius+xf, width)];
+                                                                                           ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+../src/./feature/cuda/integer_motion/motion_score.cu(104): warning #1143-D: arithmetic on pointer to void or function type
+                  blurred_y += filter_d[yf] * reinterpret_cast<const uint16_t*>(src.data[0] + mirror(y-radius+yf, height) * src.stride[0])[mirror(x-radius+xf, width)];
+                                                                                            ^
+
+[39/107] Generating src/ptx_xxd_motion_score with a custom command
+[40/107] Compiling C object src/libcuda_common_vmaf_lib.a.p/meson-generated_.._motion_score.ptx.c.o
+[41/107] Generating src/cu_ptx_target_filter1d with a custom command
+[42/107] Generating src/ptx_xxd_filter1d with a custom command
+[43/107] Compiling C object src/libcuda_common_vmaf_lib.a.p/meson-generated_.._filter1d.ptx.c.o
+[44/107] Compiling Cuda object src/libcuda_common_vmaf_lib.a.p/feature_cuda_integer_adm_adm_csf.cu.o
+../src/feature/cuda/integer_adm/adm_csf.cu(73): warning #68-D: integer conversion resulted in a change of sign
+      const int32_t add_bef_shift_flt = (1u << (shift_flt - 1));
+                                        ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+../src/feature/cuda/integer_adm/adm_csf.cu(73): warning #68-D: integer conversion resulted in a change of sign
+      const int32_t add_bef_shift_flt = (1u << (shift_flt - 1));
+                                        ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+[45/107] Compiling Cuda object src/libcuda_common_vmaf_lib.a.p/feature_cuda_integer_adm_adm_dwt2.cu.o
+../src/feature/cuda/integer_adm/adm_dwt2.cu:293: warning: ignoring ‘#pragma region ’ [-Wunknown-pragmas]
+  293 | #pragma region
+      | 
+../src/feature/cuda/integer_adm/adm_dwt2.cu:331: warning: ignoring ‘#pragma endregion ’ [-Wunknown-pragmas]
+  331 | #pragma endregion
+      | 
+[46/107] Compiling Cuda object src/libcuda_common_vmaf_lib.a.p/feature_cuda_integer_adm_adm_csf_den.cu.o
+[47/107] Compiling Cuda object src/libcuda_common_vmaf_lib.a.p/feature_cuda_integer_adm_adm_cm.cu.o
+../src/feature/cuda/integer_adm/adm_cm.cu(52): warning #68-D: integer conversion resulted in a change of sign
+          const int32_t add_bef_shift_flt = (1u << (shift_flt - 1));
+                                            ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+../src/feature/cuda/integer_adm/adm_cm.cu(52): warning #68-D: integer conversion resulted in a change of sign
+          const int32_t add_bef_shift_flt = (1u << (shift_flt - 1));
+                                            ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+[48/107] Compiling C object src/liblibvmaf_feature.a.p/feature_picture_copy.c.o
+[49/107] Compiling C object src/liblibvmaf_feature.a.p/feature_integer_psnr.c.o
+[50/107] Compiling Cuda object src/libcuda_common_vmaf_lib.a.p/feature_cuda_integer_adm_adm_decouple.cu.o
+[51/107] Compiling C object src/liblibvmaf_feature.a.p/feature_third_party_xiph_psnr_hvs.c.o
+[52/107] Compiling C object src/liblibvmaf_feature.a.p/feature_feature_extractor.c.o
+[53/107] Compiling C object src/liblibvmaf_feature.a.p/feature_feature_name.c.o
+[54/107] Compiling C object src/liblibvmaf_feature.a.p/feature_alias.c.o
+[55/107] Compiling C object src/liblibvmaf_feature.a.p/feature_feature_collector.c.o
+[56/107] Compiling Cuda object src/libcuda_common_vmaf_lib.a.p/feature_cuda_integer_motion_motion_score.cu.o
+../src/feature/cuda/integer_motion/motion_score.cu(60): warning #1143-D: arithmetic on pointer to void or function type
+                  blurred_y += filter_d[yf] * reinterpret_cast<const uint8_t*>(src.data[0] + mirror(y-radius+yf, height) * src.stride[0])[mirror(x-radius+xf, width)];
+                                                                                           ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+../src/feature/cuda/integer_motion/motion_score.cu(104): warning #1143-D: arithmetic on pointer to void or function type
+                  blurred_y += filter_d[yf] * reinterpret_cast<const uint16_t*>(src.data[0] + mirror(y-radius+yf, height) * src.stride[0])[mirror(x-radius+xf, width)];
+                                                                                            ^
+
+../src/feature/cuda/integer_motion/motion_score.cu(60): warning #1143-D: arithmetic on pointer to void or function type
+                  blurred_y += filter_d[yf] * reinterpret_cast<const uint8_t*>(src.data[0] + mirror(y-radius+yf, height) * src.stride[0])[mirror(x-radius+xf, width)];
+                                                                                           ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+../src/feature/cuda/integer_motion/motion_score.cu(104): warning #1143-D: arithmetic on pointer to void or function type
+                  blurred_y += filter_d[yf] * reinterpret_cast<const uint16_t*>(src.data[0] + mirror(y-radius+yf, height) * src.stride[0])[mirror(x-radius+xf, width)];
+                                                                                            ^
+
+[57/107] Compiling C object src/liblibvmaf_feature.a.p/feature_integer_motion.c.o
+In file included from ../src/feature/integer_motion.c:29:
+../src/feature/integer_motion.h: In function ‘edge_16’:
+../src/feature/integer_motion.h:37:34: warning: operand of ‘?:’ changes signedness from ‘int’ to ‘unsigned int’ due to unsignedness of other operand [-Wsign-compare]
+   37 |         int i_tap = horizontal ? i : i - radius + k;
+      |                                  ^
+../src/feature/integer_motion.h:38:51: warning: operand of ‘?:’ changes signedness from ‘int’ to ‘unsigned int’ due to unsignedness of other operand [-Wsign-compare]
+   38 |         int j_tap = horizontal ? j - radius + k : j;
+      |                                                   ^
+[58/107] Compiling C object src/liblibvmaf_feature.a.p/feature_integer_vif.c.o
+../src/feature/integer_vif.c: In function ‘vif_compute_line_residuals’:
+../src/feature/integer_vif.c:497:13: warning: variable ‘add_shift_round_VP_sq’ set but not used [-Wunused-but-set-variable]
+  497 |     int32_t add_shift_round_VP_sq, shift_VP_sq;
+      |             ^~~~~~~~~~~~~~~~~~~~~
+../src/feature/integer_vif.c:496:33: warning: variable ‘shift_VP’ set but not used [-Wunused-but-set-variable]
+  496 |     int32_t add_shift_round_VP, shift_VP;
+      |                                 ^~~~~~~~
+../src/feature/integer_vif.c:496:13: warning: variable ‘add_shift_round_VP’ set but not used [-Wunused-but-set-variable]
+  496 |     int32_t add_shift_round_VP, shift_VP;
+      |             ^~~~~~~~~~~~~~~~~~
+[59/107] Compiling C object src/liblibvmaf_feature.a.p/feature_common_alignment.c.o
+[60/107] Compiling C object src/liblibvmaf_feature.a.p/feature_ciede.c.o
+[61/107] Compiling C object src/liblibvmaf_feature.a.p/feature_mkdirp.c.o
+[62/107] Compiling C object src/liblibvmaf_feature.a.p/feature_float_ssim.c.o
+[63/107] Compiling C object src/liblibvmaf_feature.a.p/feature_float_ms_ssim.c.o
+[64/107] Compiling C object src/liblibvmaf_feature.a.p/feature_ssim.c.o
+[65/107] Compiling C object src/liblibvmaf_feature.a.p/feature_iqa_decimate.c.o
+[66/107] Compiling C object src/liblibvmaf_feature.a.p/feature_ms_ssim.c.o
+[67/107] Compiling C object src/liblibvmaf_feature.a.p/feature_iqa_math_utils.c.o
+[68/107] Compiling C object src/liblibvmaf_feature.a.p/feature_iqa_ssim_tools.c.o
+[69/107] Compiling C object src/liblibvmaf_feature.a.p/feature_iqa_convolve.c.o
+[70/107] Compiling C object src/liblibvmaf_feature.a.p/feature_luminance_tools.c.o
+[71/107] Compiling C object src/liblibvmaf_feature.a.p/feature_null.c.o
+[72/107] Compiling Cuda object src/libcuda_common_vmaf_lib.a.p/feature_cuda_integer_vif_filter1d.cu.o
+[73/107] Linking static target src/libcuda_common_vmaf_lib.a
+[74/107] Compiling C object src/liblibvmaf_feature.a.p/feature_cuda_integer_adm_cuda.c.o
+../src/feature/cuda/integer_adm_cuda.c: In function ‘dwt2_8_device’:
+../src/feature/cuda/integer_adm_cuda.c:116:89: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  116 |     void *args[] = {&d_picture, &*d_dst, &i4_dwt_dst, &w, &h, &src_stride, &dst_stride, &v_shift, &v_add_shift, &*p};
+      |                                                                                         ^
+../src/feature/cuda/integer_adm_cuda.c:116:99: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  116 |     void *args[] = {&d_picture, &*d_dst, &i4_dwt_dst, &w, &h, &src_stride, &dst_stride, &v_shift, &v_add_shift, &*p};
+      |                                                                                                   ^
+../src/feature/cuda/integer_adm_cuda.c:102:17: warning: unused parameter ‘tmp_buf’ [-Wunused-parameter]
+  102 |         short2 *tmp_buf, AdmBufferCuda *d_buf, int w, int h,
+      |         ~~~~~~~~^~~~~~~
+../src/feature/cuda/integer_adm_cuda.c:102:41: warning: unused parameter ‘d_buf’ [-Wunused-parameter]
+  102 |         short2 *tmp_buf, AdmBufferCuda *d_buf, int w, int h,
+      |                          ~~~~~~~~~~~~~~~^~~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘adm_dwt2_16_device’:
+../src/feature/cuda/integer_adm_cuda.c:139:89: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  139 |     void *args[] = {&d_picture, &*d_dst, &i4_dwt_dst, &w, &h, &src_stride, &dst_stride, &v_shift, &v_add_shift, &*p};
+      |                                                                                         ^
+../src/feature/cuda/integer_adm_cuda.c:139:99: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  139 |     void *args[] = {&d_picture, &*d_dst, &i4_dwt_dst, &w, &h, &src_stride, &dst_stride, &v_shift, &v_add_shift, &*p};
+      |                                                                                                   ^
+../src/feature/cuda/integer_adm_cuda.c:125:17: warning: unused parameter ‘tmp_buf’ [-Wunused-parameter]
+  125 |         short2 *tmp_buf, AdmBufferCuda *d_buf, int w, int h,
+      |         ~~~~~~~~^~~~~~~
+../src/feature/cuda/integer_adm_cuda.c:125:41: warning: unused parameter ‘d_buf’ [-Wunused-parameter]
+  125 |         short2 *tmp_buf, AdmBufferCuda *d_buf, int w, int h,
+      |                          ~~~~~~~~~~~~~~~^~~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘adm_dwt2_s123_combined_device’:
+../src/feature/cuda/integer_adm_cuda.c:148:24: warning: unused parameter ‘d_buf’ [-Wunused-parameter]
+  148 |         AdmBufferCuda *d_buf, int w, int h, int img_stride, int dst_stride, int scale, AdmFixedParametersCuda *p, CUstream cu_stream) {
+      |         ~~~~~~~~~~~~~~~^~~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘adm_csf_den_s123_device’:
+../src/feature/cuda/integer_adm_cuda.c:376:32: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  376 |         &buf->i4_ref_dwt2, &h, &top, &bottom, &left, &right, &src_stride,
+      |                                ^
+../src/feature/cuda/integer_adm_cuda.c:376:38: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  376 |         &buf->i4_ref_dwt2, &h, &top, &bottom, &left, &right, &src_stride,
+      |                                      ^
+../src/feature/cuda/integer_adm_cuda.c:376:47: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  376 |         &buf->i4_ref_dwt2, &h, &top, &bottom, &left, &right, &src_stride,
+      |                                               ^
+../src/feature/cuda/integer_adm_cuda.c:376:54: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  376 |         &buf->i4_ref_dwt2, &h, &top, &bottom, &left, &right, &src_stride,
+      |                                                      ^
+../src/feature/cuda/integer_adm_cuda.c:377:9: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  377 |         &add_shift_sq[scale - 1], &shift_sq[scale - 1],
+      |         ^
+../src/feature/cuda/integer_adm_cuda.c:377:35: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  377 |         &add_shift_sq[scale - 1], &shift_sq[scale - 1],
+      |                                   ^
+../src/feature/cuda/integer_adm_cuda.c:353:32: warning: unused parameter ‘adm_norm_view_dist’ [-Wunused-parameter]
+  353 |         int src_stride, double adm_norm_view_dist,
+      |                         ~~~~~~~^~~~~~~~~~~~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c:354:13: warning: unused parameter ‘adm_ref_display_height’ [-Wunused-parameter]
+  354 |         int adm_ref_display_height, CUstream c_stream) {
+      |         ~~~~^~~~~~~~~~~~~~~~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘adm_csf_den_scale_device’:
+../src/feature/cuda/integer_adm_cuda.c:406:29: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  406 |         &buf->ref_dwt2, &h, &top, &bottom, &left, &right, &src_stride,
+      |                             ^
+../src/feature/cuda/integer_adm_cuda.c:406:35: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  406 |         &buf->ref_dwt2, &h, &top, &bottom, &left, &right, &src_stride,
+      |                                   ^
+../src/feature/cuda/integer_adm_cuda.c:406:44: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  406 |         &buf->ref_dwt2, &h, &top, &bottom, &left, &right, &src_stride,
+      |                                            ^
+../src/feature/cuda/integer_adm_cuda.c:406:51: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  406 |         &buf->ref_dwt2, &h, &top, &bottom, &left, &right, &src_stride,
+      |                                                   ^
+../src/feature/cuda/integer_adm_cuda.c:386:16: warning: unused parameter ‘adm_norm_view_dist’ [-Wunused-parameter]
+  386 |         double adm_norm_view_dist,
+      |         ~~~~~~~^~~~~~~~~~~~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c:387:13: warning: unused parameter ‘adm_ref_display_height’ [-Wunused-parameter]
+  387 |         int adm_ref_display_height, CUstream c_stream) {
+      |         ~~~~^~~~~~~~~~~~~~~~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘i4_adm_cm_device’:
+../src/feature/cuda/integer_adm_cuda.c:437:28: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  437 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                            ^
+../src/feature/cuda/integer_adm_cuda.c:437:34: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  437 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                  ^
+../src/feature/cuda/integer_adm_cuda.c:437:43: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  437 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                           ^
+../src/feature/cuda/integer_adm_cuda.c:437:50: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  437 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                                  ^
+../src/feature/cuda/integer_adm_cuda.c:437:58: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  437 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                                          ^
+../src/feature/cuda/integer_adm_cuda.c:437:70: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  437 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                                                      ^
+../src/feature/cuda/integer_adm_cuda.c:437:80: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  437 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                                                                ^
+../src/feature/cuda/integer_adm_cuda.c:438:13: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  438 |             &end_col, &src_stride, &csf_a_stride, &scale, &buffer_h, &buffer_stride,
+      |             ^
+../src/feature/cuda/integer_adm_cuda.c:438:59: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  438 |             &end_col, &src_stride, &csf_a_stride, &scale, &buffer_h, &buffer_stride,
+      |                                                           ^
+../src/feature/cuda/integer_adm_cuda.c:438:70: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  438 |             &end_col, &src_stride, &csf_a_stride, &scale, &buffer_h, &buffer_stride,
+      |                                                                      ^
+../src/feature/cuda/integer_adm_cuda.c:451:29: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  451 |             &h, &w, &scale, &buffer_h, &buffer_stride,
+      |                             ^
+../src/feature/cuda/integer_adm_cuda.c:451:40: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  451 |             &h, &w, &scale, &buffer_h, &buffer_stride,
+      |                                        ^
+../src/feature/cuda/integer_adm_cuda.c: In function ‘adm_cm_device’:
+../src/feature/cuda/integer_adm_cuda.c:511:28: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  511 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                            ^
+../src/feature/cuda/integer_adm_cuda.c:511:34: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  511 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                  ^
+../src/feature/cuda/integer_adm_cuda.c:511:43: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  511 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                           ^
+../src/feature/cuda/integer_adm_cuda.c:511:50: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  511 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                                  ^
+../src/feature/cuda/integer_adm_cuda.c:511:58: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  511 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                                          ^
+../src/feature/cuda/integer_adm_cuda.c:511:70: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  511 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                                                      ^
+../src/feature/cuda/integer_adm_cuda.c:511:80: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  511 |             &*buf, &h, &w, &top, &bottom, &left, &right, &start_row, &end_row, &start_col,
+      |                                                                                ^
+../src/feature/cuda/integer_adm_cuda.c:512:13: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  512 |             &end_col, &src_stride, &csf_a_stride, &buffer_h, &buffer_stride,
+      |             ^
+../src/feature/cuda/integer_adm_cuda.c:512:51: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  512 |             &end_col, &src_stride, &csf_a_stride, &buffer_h, &buffer_stride,
+      |                                                   ^
+../src/feature/cuda/integer_adm_cuda.c:512:62: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  512 |             &end_col, &src_stride, &csf_a_stride, &buffer_h, &buffer_stride,
+      |                                                              ^
+../src/feature/cuda/integer_adm_cuda.c:514:13: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  514 |             &scale, &buf->adm_cm[scale], &ws,
+      |             ^
+../src/feature/cuda/integer_adm_cuda.c:515:13: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  515 |             &shift_inner_accum, &add_shift_inner_accum
+      |             ^
+../src/feature/cuda/integer_adm_cuda.c:515:33: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+  515 |             &shift_inner_accum, &add_shift_inner_accum
+      |                                 ^
+../src/feature/cuda/integer_adm_cuda.c: In function ‘write_scores’:
+../src/feature/cuda/integer_adm_cuda.c:696:12: warning: unused variable ‘val’ [-Wunused-variable]
+  696 |     double val = s->adm_enhn_gain_limit;
+      |            ^~~
+../src/feature/cuda/integer_adm_cuda.c:693:11: warning: unused variable ‘key’ [-Wunused-variable]
+  693 |     char *key =
+      |           ^~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘integer_compute_adm_cuda’:
+../src/feature/cuda/integer_adm_cuda.c:811:19: warning: unused variable ‘i_rfactor’ [-Wunused-variable]
+  811 |         uint32_t *i_rfactor = &p.i_rfactor[scale*3];
+      |                   ^~~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c:841:102: warning: passing argument 5 of ‘dwt2_8_device’ from incompatible pointer type [-Wincompatible-pointer-types]
+  841 |                 dwt2_8_device(s, (const uint8_t*)ref_pic->data[0], &buf->ref_dwt2, buf->i4_ref_dwt2, (int16_t*)buf->tmp_ref->data, buf, w, h, curr_ref_stride, buf_stride, &p, vmaf_cuda_picture_get_stream(ref_pic));
+      |                                                                                                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                                                                                                      |
+      |                                                                                                      int16_t * {aka short int *}
+../src/feature/cuda/integer_adm_cuda.c:102:17: note: expected ‘short2 *’ but argument is of type ‘int16_t *’ {aka ‘short int *’}
+  102 |         short2 *tmp_buf, AdmBufferCuda *d_buf, int w, int h,
+      |         ~~~~~~~~^~~~~~~
+../src/feature/cuda/integer_adm_cuda.c:843:102: warning: passing argument 5 of ‘dwt2_8_device’ from incompatible pointer type [-Wincompatible-pointer-types]
+  843 |                 dwt2_8_device(s, (const uint8_t*)dis_pic->data[0], &buf->dis_dwt2, buf->i4_dis_dwt2, (int16_t*)buf->tmp_dis->data, buf, w, h, curr_dis_stride, buf_stride, &p,  vmaf_cuda_picture_get_stream(dis_pic));
+      |                                                                                                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                                                                                                      |
+      |                                                                                                      int16_t * {aka short int *}
+../src/feature/cuda/integer_adm_cuda.c:102:17: note: expected ‘short2 *’ but argument is of type ‘int16_t *’ {aka ‘short int *’}
+  102 |         short2 *tmp_buf, AdmBufferCuda *d_buf, int w, int h,
+      |         ~~~~~~~~^~~~~~~
+../src/feature/cuda/integer_adm_cuda.c:846:101: warning: passing argument 5 of ‘adm_dwt2_16_device’ from incompatible pointer type [-Wincompatible-pointer-types]
+  846 |                 adm_dwt2_16_device(s,(uint16_t*)ref_pic->data[0], &buf->ref_dwt2, buf->i4_ref_dwt2, (int16_t*)buf->tmp_ref->data, buf, w, h, curr_ref_stride, buf_stride, ref_pic->bpc, &p,  vmaf_cuda_picture_get_stream(ref_pic));
+      |                                                                                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                                                                                                     |
+      |                                                                                                     int16_t * {aka short int *}
+../src/feature/cuda/integer_adm_cuda.c:125:17: note: expected ‘short2 *’ but argument is of type ‘int16_t *’ {aka ‘short int *’}
+  125 |         short2 *tmp_buf, AdmBufferCuda *d_buf, int w, int h,
+      |         ~~~~~~~~^~~~~~~
+../src/feature/cuda/integer_adm_cuda.c:848:101: warning: passing argument 5 of ‘adm_dwt2_16_device’ from incompatible pointer type [-Wincompatible-pointer-types]
+  848 |                 adm_dwt2_16_device(s,(uint16_t*)dis_pic->data[0], &buf->dis_dwt2, buf->i4_dis_dwt2, (int16_t*)buf->tmp_dis->data, buf, w, h, curr_dis_stride, buf_stride, dis_pic->bpc, &p,  vmaf_cuda_picture_get_stream(dis_pic));
+      |                                                                                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                                                                                                     |
+      |                                                                                                     int16_t * {aka short int *}
+../src/feature/cuda/integer_adm_cuda.c:125:17: note: expected ‘short2 *’ but argument is of type ‘int16_t *’ {aka ‘short int *’}
+  125 |         short2 *tmp_buf, AdmBufferCuda *d_buf, int w, int h,
+      |         ~~~~~~~~^~~~~~~
+../src/feature/cuda/integer_adm_cuda.c:833:15: warning: unused variable ‘den_scale’ [-Wunused-variable]
+  833 |         float den_scale = 0.0;
+      |               ^~~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c:832:15: warning: unused variable ‘num_scale’ [-Wunused-variable]
+  832 |         float num_scale = 0.0;
+      |               ^~~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘init_dwt_band_cuda’:
+../src/feature/cuda/integer_adm_cuda.c:928:61: warning: unused parameter ‘cu_state’ [-Wunused-parameter]
+  928 | static CUdeviceptr init_dwt_band_cuda(struct VmafCudaState *cu_state,
+      |                                       ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘init_dwt_band_hvd_cuda’:
+../src/feature/cuda/integer_adm_cuda.c:939:65: warning: unused parameter ‘cu_state’ [-Wunused-parameter]
+  939 | static CUdeviceptr init_dwt_band_hvd_cuda(struct VmafCudaState *cu_state,
+      |                                           ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘i4_init_dwt_band_cuda’:
+../src/feature/cuda/integer_adm_cuda.c:950:64: warning: unused parameter ‘cu_state’ [-Wunused-parameter]
+  950 | static CUdeviceptr i4_init_dwt_band_cuda(struct VmafCudaState *cu_state,
+      |                                          ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘i4_init_dwt_band_hvd_cuda’:
+../src/feature/cuda/integer_adm_cuda.c:960:68: warning: unused parameter ‘cu_state’ [-Wunused-parameter]
+  960 | static CUdeviceptr i4_init_dwt_band_hvd_cuda(struct VmafCudaState *cu_state,
+      |                                              ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘init_res_cm_cuda’:
+../src/feature/cuda/integer_adm_cuda.c:971:59: warning: unused parameter ‘cu_state’ [-Wunused-parameter]
+  971 | static CUdeviceptr init_res_cm_cuda(struct VmafCudaState *cu_state,
+      |                                     ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘init_res_csf_cuda’:
+../src/feature/cuda/integer_adm_cuda.c:983:60: warning: unused parameter ‘cu_state’ [-Wunused-parameter]
+  983 | static CUdeviceptr init_res_csf_cuda(struct VmafCudaState *cu_state,
+      |                                      ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+In file included from ../src/cuda/common.h:33,
+                 from ../src/feature/cuda/integer_adm_cuda.c:20:
+../src/feature/cuda/integer_adm_cuda.c: In function ‘extract_fex_cuda’:
+../src/feature/cuda/integer_adm_cuda.c:1181:49: warning: cast between incompatible function types from ‘int (*)(write_score_parameters_adm *)’ to ‘void (*)(void *)’ [-Wcast-function-type]
+ 1181 |     CHECK_CUDA(cuLaunchHostFunc(s->host_stream, (CUhostFn)write_scores, data));
+      |                                                 ^
+../src/cuda/cuda_helper.cuh:34:29: note: in definition of macro ‘CHECK_CUDA’
+   34 |         if (CUDA_SUCCESS != CALL) {                                            \
+      |                             ^~~~
+../src/feature/cuda/integer_adm_cuda.c:1181:49: warning: cast between incompatible function types from ‘int (*)(write_score_parameters_adm *)’ to ‘void (*)(void *)’ [-Wcast-function-type]
+ 1181 |     CHECK_CUDA(cuLaunchHostFunc(s->host_stream, (CUhostFn)write_scores, data));
+      |                                                 ^
+../src/cuda/cuda_helper.cuh:36:34: note: in definition of macro ‘CHECK_CUDA’
+   36 |             const CUresult err = CALL;                                         \
+      |                                  ^~~~
+../src/feature/cuda/integer_adm_cuda.c: In function ‘flush_fex_cuda’:
+../src/feature/cuda/integer_adm_cuda.c:1222:31: warning: unused parameter ‘feature_collector’ [-Wunused-parameter]
+ 1222 |         VmafFeatureCollector *feature_collector)
+      |         ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~
+[75/107] Compiling C object src/liblibvmaf_feature.a.p/feature_cuda_integer_vif_cuda.c.o
+../src/feature/cuda/integer_vif_cuda.c:63:1: warning: no semicolon at end of struct or union
+   63 | } VifStateCuda;
+      | ^
+../src/feature/cuda/integer_vif_cuda.c: In function ‘init_fex_cuda’:
+../src/feature/cuda/integer_vif_cuda.c:162:16: warning: assignment to ‘uint16_t *’ {aka ‘short unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  162 |     s->buf.mu1 = data; data += h * s->buf.stride_16;
+      |                ^
+../src/feature/cuda/integer_vif_cuda.c:163:16: warning: assignment to ‘uint16_t *’ {aka ‘short unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  163 |     s->buf.mu2 = data; data += h * s->buf.stride_16;
+      |                ^
+../src/feature/cuda/integer_vif_cuda.c:164:19: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  164 |     s->buf.mu1_32 = data; data += h * s->buf.stride_32;
+      |                   ^
+../src/feature/cuda/integer_vif_cuda.c:165:19: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  165 |     s->buf.mu2_32 = data; data += h * s->buf.stride_32;
+      |                   ^
+../src/feature/cuda/integer_vif_cuda.c:166:19: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  166 |     s->buf.ref_sq = data; data += h * s->buf.stride_32;
+      |                   ^
+../src/feature/cuda/integer_vif_cuda.c:167:19: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  167 |     s->buf.dis_sq = data; data += h * s->buf.stride_32;
+      |                   ^
+../src/feature/cuda/integer_vif_cuda.c:168:20: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  168 |     s->buf.ref_dis = data; data += h * s->buf.stride_32;
+      |                    ^
+../src/feature/cuda/integer_vif_cuda.c:169:20: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  169 |     s->buf.tmp.mu1 = data; data += s->buf.stride_tmp * h;
+      |                    ^
+../src/feature/cuda/integer_vif_cuda.c:170:20: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  170 |     s->buf.tmp.mu2 = data; data += s->buf.stride_tmp * h;
+      |                    ^
+../src/feature/cuda/integer_vif_cuda.c:171:20: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  171 |     s->buf.tmp.ref = data; data += s->buf.stride_tmp * h;
+      |                    ^
+../src/feature/cuda/integer_vif_cuda.c:172:20: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  172 |     s->buf.tmp.dis = data; data += s->buf.stride_tmp * h;
+      |                    ^
+../src/feature/cuda/integer_vif_cuda.c:173:24: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  173 |     s->buf.tmp.ref_dis = data; data += s->buf.stride_tmp * h;
+      |                        ^
+../src/feature/cuda/integer_vif_cuda.c:174:27: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  174 |     s->buf.tmp.ref_convol = data; data += s->buf.stride_tmp  * h;
+      |                           ^
+../src/feature/cuda/integer_vif_cuda.c:175:27: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  175 |     s->buf.tmp.dis_convol = data; data += s->buf.stride_tmp  * h;
+      |                           ^
+../src/feature/cuda/integer_vif_cuda.c:176:24: warning: assignment to ‘uint32_t *’ {aka ‘unsigned int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  176 |     s->buf.tmp.padding = data; data += s->buf.stride_tmp  * h;
+      |                        ^
+../src/feature/cuda/integer_vif_cuda.c:182:18: warning: assignment to ‘int64_t *’ {aka ‘long int *’} from ‘CUdeviceptr’ {aka ‘long long unsigned int’} makes pointer from integer without a cast [-Wint-conversion]
+  182 |     s->buf.accum = data_accum;
+      |                  ^
+../src/feature/cuda/integer_vif_cuda.c:144:18: warning: unused variable ‘pad_size’ [-Wunused-variable]
+  144 |     const size_t pad_size = s->buf.stride * 8;
+      |                  ^~~~~~~~
+../src/feature/cuda/integer_vif_cuda.c: In function ‘filter1d_8’:
+../src/feature/cuda/integer_vif_cuda.c:218:46: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-array-qualifiers]
+  218 |             &*buf, &ref_in, &dis_in, &w, &h, &vif_filter1d_table
+      |                                              ^
+../src/feature/cuda/integer_vif_cuda.c:230:28: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-array-qualifiers]
+  230 |             &*buf, &w, &h, &vif_filter1d_table,
+      |                            ^
+../src/feature/cuda/integer_vif_cuda.c: In function ‘filter1d_16’:
+../src/feature/cuda/integer_vif_cuda.c:283:9: warning: initialization discards ‘const’ qualifier from pointer target type [-Wdiscarded-array-qualifiers]
+  283 |         &vif_filter1d_table, &vif_enhn_gain_limit,
+      |         ^
+In file included from ../src/cuda/common.h:33,
+                 from ../src/feature/feature_extractor.h:33,
+                 from ../src/feature/cuda/integer_vif_cuda.c:28:
+../src/feature/cuda/integer_vif_cuda.c: In function ‘extract_fex_cuda’:
+../src/feature/cuda/integer_vif_cuda.c:499:41: warning: passing argument 2 of ‘cuLaunchHostFunc’ from incompatible pointer type [-Wincompatible-pointer-types]
+  499 |     CHECK_CUDA(cuLaunchHostFunc(s->str, write_scores, data));
+      |                                         ^~~~~~~~~~~~
+      |                                         |
+      |                                         int (*)(write_score_parameters_vif *)
+../src/cuda/cuda_helper.cuh:34:29: note: in definition of macro ‘CHECK_CUDA’
+   34 |         if (CUDA_SUCCESS != CALL) {                                            \
+      |                             ^~~~
+In file included from ../src/picture.h:23,
+                 from ../src/cuda/common.h:27,
+                 from ../src/feature/feature_extractor.h:33,
+                 from ../src/feature/cuda/integer_vif_cuda.c:28:
+/usr/local/cuda/include/cuda.h:15868:62: note: expected ‘CUhostFn’ {aka ‘void (*)(void *)’} but argument is of type ‘int (*)(write_score_parameters_vif *)’
+15868 | CUresult CUDAAPI cuLaunchHostFunc(CUstream hStream, CUhostFn fn, void *userData);
+      |                                                     ~~~~~~~~~^~
+In file included from ../src/cuda/common.h:33,
+                 from ../src/feature/feature_extractor.h:33,
+                 from ../src/feature/cuda/integer_vif_cuda.c:28:
+../src/feature/cuda/integer_vif_cuda.c:499:41: warning: passing argument 2 of ‘cuLaunchHostFunc’ from incompatible pointer type [-Wincompatible-pointer-types]
+  499 |     CHECK_CUDA(cuLaunchHostFunc(s->str, write_scores, data));
+      |                                         ^~~~~~~~~~~~
+      |                                         |
+      |                                         int (*)(write_score_parameters_vif *)
+../src/cuda/cuda_helper.cuh:36:34: note: in definition of macro ‘CHECK_CUDA’
+   36 |             const CUresult err = CALL;                                         \
+      |                                  ^~~~
+In file included from ../src/picture.h:23,
+                 from ../src/cuda/common.h:27,
+                 from ../src/feature/feature_extractor.h:33,
+                 from ../src/feature/cuda/integer_vif_cuda.c:28:
+/usr/local/cuda/include/cuda.h:15868:62: note: expected ‘CUhostFn’ {aka ‘void (*)(void *)’} but argument is of type ‘int (*)(write_score_parameters_vif *)’
+15868 | CUresult CUDAAPI cuLaunchHostFunc(CUstream hStream, CUhostFn fn, void *userData);
+      |                                                     ~~~~~~~~~^~
+../src/feature/cuda/integer_vif_cuda.c: In function ‘flush_fex_cuda’:
+../src/feature/cuda/integer_vif_cuda.c:525:31: warning: unused parameter ‘feature_collector’ [-Wunused-parameter]
+  525 |         VmafFeatureCollector *feature_collector)
+      |         ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~
+[76/107] Compiling C object src/libvmaf.so.3.0.0.p/meson-generated_.._vmaf_v0.6.1.json.c.o
+[77/107] Compiling C object src/liblibvmaf_feature.a.p/feature_cuda_integer_motion_cuda.c.o
+In file included from ../src/feature/cuda/integer_motion_cuda.h:24,
+                 from ../src/feature/cuda/integer_motion_cuda.c:29:
+../src/feature/integer_motion.h: In function ‘edge_16’:
+../src/feature/integer_motion.h:37:34: warning: operand of ‘?:’ changes signedness from ‘int’ to ‘unsigned int’ due to unsignedness of other operand [-Wsign-compare]
+   37 |         int i_tap = horizontal ? i : i - radius + k;
+      |                                  ^
+../src/feature/integer_motion.h:38:51: warning: operand of ‘?:’ changes signedness from ‘int’ to ‘unsigned int’ due to unsignedness of other operand [-Wsign-compare]
+   38 |         int j_tap = horizontal ? j - radius + k : j;
+      |                                                   ^
+../src/feature/cuda/integer_motion_cuda.c: In function ‘init_fex_cuda’:
+../src/feature/cuda/integer_motion_cuda.c:176:55: warning: passing argument 2 of ‘vmaf_cuda_buffer_host_alloc’ from incompatible pointer type [-Wincompatible-pointer-types]
+  176 |     ret |= vmaf_cuda_buffer_host_alloc(fex->cu_state, &s->sad_host, sizeof(uint64_t));
+      |                                                       ^~~~~~~~~~~~
+      |                                                       |
+      |                                                       uint64_t ** {aka long unsigned int **}
+In file included from ../src/feature/cuda/integer_motion_cuda.c:23:
+../src/cuda/common.h:159:65: note: expected ‘void **’ but argument is of type ‘uint64_t **’ {aka ‘long unsigned int **’}
+  159 | int vmaf_cuda_buffer_host_alloc(VmafCudaState *cu_state, void **p_buf,
+      |                                                          ~~~~~~~^~~~~
+../src/feature/cuda/integer_motion_cuda.c:135:74: warning: unused parameter ‘pix_fmt’ [-Wunused-parameter]
+  135 | static int init_fex_cuda(VmafFeatureExtractor *fex, enum VmafPixelFormat pix_fmt,
+      |                                                     ~~~~~~~~~~~~~~~~~~~~~^~~~~~~
+../src/feature/cuda/integer_motion_cuda.c:136:18: warning: unused parameter ‘bpc’ [-Wunused-parameter]
+  136 |         unsigned bpc, unsigned w, unsigned h)
+      |         ~~~~~~~~~^~~
+In file included from ../src/cuda/common.h:33,
+                 from ../src/feature/cuda/integer_motion_cuda.c:23:
+../src/feature/cuda/integer_motion_cuda.c: In function ‘extract_fex_cuda’:
+../src/feature/cuda/integer_motion_cuda.c:318:49: warning: passing argument 2 of ‘cuLaunchHostFunc’ from incompatible pointer type [-Wincompatible-pointer-types]
+  318 |     CHECK_CUDA(cuLaunchHostFunc(s->host_stream, write_scores, s->write_score_parameters));
+      |                                                 ^~~~~~~~~~~~
+      |                                                 |
+      |                                                 int (*)(write_score_parameters_moco *)
+../src/cuda/cuda_helper.cuh:34:29: note: in definition of macro ‘CHECK_CUDA’
+   34 |         if (CUDA_SUCCESS != CALL) {                                            \
+      |                             ^~~~
+In file included from ../src/picture.h:23,
+                 from ../src/cuda/common.h:27,
+                 from ../src/feature/cuda/integer_motion_cuda.c:23:
+/usr/local/cuda/include/cuda.h:15868:62: note: expected ‘CUhostFn’ {aka ‘void (*)(void *)’} but argument is of type ‘int (*)(write_score_parameters_moco *)’
+15868 | CUresult CUDAAPI cuLaunchHostFunc(CUstream hStream, CUhostFn fn, void *userData);
+      |                                                     ~~~~~~~~~^~
+In file included from ../src/cuda/common.h:33,
+                 from ../src/feature/cuda/integer_motion_cuda.c:23:
+../src/feature/cuda/integer_motion_cuda.c:318:49: warning: passing argument 2 of ‘cuLaunchHostFunc’ from incompatible pointer type [-Wincompatible-pointer-types]
+  318 |     CHECK_CUDA(cuLaunchHostFunc(s->host_stream, write_scores, s->write_score_parameters));
+      |                                                 ^~~~~~~~~~~~
+      |                                                 |
+      |                                                 int (*)(write_score_parameters_moco *)
+../src/cuda/cuda_helper.cuh:36:34: note: in definition of macro ‘CHECK_CUDA’
+   36 |             const CUresult err = CALL;                                         \
+      |                                  ^~~~
+In file included from ../src/picture.h:23,
+                 from ../src/cuda/common.h:27,
+                 from ../src/feature/cuda/integer_motion_cuda.c:23:
+/usr/local/cuda/include/cuda.h:15868:62: note: expected ‘CUhostFn’ {aka ‘void (*)(void *)’} but argument is of type ‘int (*)(write_score_parameters_moco *)’
+15868 | CUresult CUDAAPI cuLaunchHostFunc(CUstream hStream, CUhostFn fn, void *userData);
+      |                                                     ~~~~~~~~~^~
+[78/107] Compiling C object src/liblibvmaf_feature.a.p/feature_cambi.c.o
+[79/107] Compiling C object src/libvmaf.so.3.0.0.p/meson-generated_.._vmaf_v0.6.1neg.json.c.o
+[80/107] Compiling C object src/libvmaf.so.3.0.0.p/meson-generated_.._vmaf_4k_v0.6.1.json.c.o
+[81/107] Compiling C object src/libvmaf.so.3.0.0.p/meson-generated_.._vmaf_4k_v0.6.1neg.json.c.o
+[82/107] Compiling C object src/liblibvmaf_feature.a.p/feature_integer_adm.c.o
+[83/107] Compiling C object src/libvmaf.so.3.0.0.p/predict.c.o
+../src/predict.c: In function ‘transform.part.0’:
+../src/predict.c:129:32: warning: ‘offset’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  129 |                 *y = slope * x + offset;
+      |                      ~~~~~~~~~~^~~~~~~~
+../src/predict.c:91:19: note: ‘offset’ was declared here
+   91 |     double slope, offset;
+      |                   ^~~~~~
+../src/predict.c:129:28: warning: ‘slope’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  129 |                 *y = slope * x + offset;
+      |                      ~~~~~~^~~
+../src/predict.c:91:12: note: ‘slope’ was declared here
+   91 |     double slope, offset;
+      |            ^~~~~
+[84/107] Linking static target src/liblibvmaf_feature.a
+[85/107] Compiling C object src/libvmaf.so.3.0.0.p/libvmaf.c.o
+../src/libvmaf.c: In function ‘translate_picture_device’:
+../src/libvmaf.c:572:50: warning: unused parameter ‘vmaf’ [-Wunused-parameter]
+  572 | static int translate_picture_device(VmafContext *vmaf, VmafPicture *pic,
+      |                                     ~~~~~~~~~~~~~^~~~
+[86/107] Compiling C object src/libvmaf.so.3.0.0.p/model.c.o
+In file included from /usr/include/string.h:535,
+                 from ../src/model.c:4:
+In function ‘strncpy’,
+    inlined from ‘vmaf_model_generate_name’ at ../src/model.c:136:9:
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:95:10: warning: ‘__builtin_strncpy’ specified bound depends on the length of the source argument [-Wstringop-truncation]
+   95 |   return __builtin___strncpy_chk (__dest, __src, __len,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   96 |                                   __glibc_objsize (__dest));
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~
+../src/model.c: In function ‘vmaf_model_generate_name’:
+../src/model.c:127:21: note: length computed here
+  127 |         cfg->name ? strlen(cfg->name) + 1 : strlen(default_name) + 1;
+      |                     ^~~~~~~~~~~~~~~~~
+[87/107] Compiling C object src/libvmaf.so.3.0.0.p/picture.c.o
+[88/107] Compiling C object src/libvmaf.so.3.0.0.p/mem.c.o
+[89/107] Compiling C object src/libvmaf.so.3.0.0.p/meson-generated_.._vmaf_b_v0.6.3.json.c.o
+[90/107] Compiling C object src/libvmaf.so.3.0.0.p/fex_ctx_vector.c.o
+[91/107] Compiling C object src/libvmaf.so.3.0.0.p/thread_pool.c.o
+[92/107] Compiling C object src/libvmaf.so.3.0.0.p/output.c.o
+[93/107] Compiling C object src/libvmaf.so.3.0.0.p/opt.c.o
+[94/107] Compiling C object src/libvmaf.so.3.0.0.p/dict.c.o
+[95/107] Compiling C object src/libvmaf.so.3.0.0.p/ref.c.o
+[96/107] Compiling C object src/libvmaf.so.3.0.0.p/log.c.o
+[97/107] Compiling C object src/libvmaf.so.3.0.0.p/read_json_model.c.o
+[98/107] Compiling C object tools/vmaf.p/cli_parse.c.o
+[99/107] Compiling C object tools/vmaf.p/vidinput.c.o
+[100/107] Compiling C object src/libvmaf.so.3.0.0.p/pdjson.c.o
+[101/107] Compiling C object tools/vmaf.p/yuv_input.c.o
+[102/107] Compiling C object tools/vmaf.p/vmaf.c.o
+[103/107] Compiling C object tools/vmaf.p/y4m_input.c.o
+[104/107] Compiling C++ object src/libvmaf.so.3.0.0.p/svm.cpp.o
+[105/107] Linking static target src/libvmaf.a
+[106/107] Linking target src/libvmaf.so.3.0.0
+[107/107] Linking target tools/vmaf
+ninja: Entering directory `/tmp/vmaf/libvmaf/build'
+[1/5] Generating include/vcs_version.h with a custom command
+Installing src/libvmaf.so.3.0.0 to /opt/vmaf-cuda/lib
+Installing symlink pointing to libvmaf.so.3.0.0 to /opt/vmaf-cuda/lib/libvmaf.so.3
+Installing symlink pointing to libvmaf.so.3 to /opt/vmaf-cuda/lib/libvmaf.so
+Installing src/libvmaf.a to /opt/vmaf-cuda/lib
+Installing tools/vmaf to /opt/vmaf-cuda/bin
+Installing /tmp/vmaf/libvmaf/include/libvmaf/libvmaf.h to /opt/vmaf-cuda/include/libvmaf
+Installing /tmp/vmaf/libvmaf/include/libvmaf/feature.h to /opt/vmaf-cuda/include/libvmaf
+Installing /tmp/vmaf/libvmaf/include/libvmaf/model.h to /opt/vmaf-cuda/include/libvmaf
+Installing /tmp/vmaf/libvmaf/include/libvmaf/picture.h to /opt/vmaf-cuda/include/libvmaf
+Installing /tmp/vmaf/libvmaf/build/include/libvmaf/version.h to /opt/vmaf-cuda/include/libvmaf
+Installing /tmp/vmaf/libvmaf/include/libvmaf/libvmaf_cuda.h to /opt/vmaf-cuda/include/libvmaf
+Installing /tmp/vmaf/libvmaf/build/meson-private/libvmaf.pc to /opt/vmaf-cuda/lib/pkgconfig
+ ---> Removed intermediate container 706ef4136d2d
+ ---> 153d5a60afba
+Successfully built 153d5a60afba
+Successfully tagged vcu-vmaf-cuda-builder:0.1.0

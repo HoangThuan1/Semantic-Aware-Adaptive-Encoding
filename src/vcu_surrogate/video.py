@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from .dataset import dataset_hash, video_manifest
 from .common import ROOT, assert_complete, portable_path, project_path, run, sha256, stable_hash, write_json
 
 
@@ -29,26 +30,32 @@ def count_frames(path: Path) -> int:
     return int(result.stdout.strip())
 
 
-def normalize_videos(config: dict) -> None:
+def normalize_videos(config: dict, video_ids: list[str] | None = None) -> None:
     source_dir = project_path(config, "videos")
     output_dir = project_path(config, "artifacts") / "reference"
     output_dir.mkdir(parents=True, exist_ok=True)
     video = config["video"]
     rows = []
-    inputs = sorted(source_dir.glob("*.mp4"))
+    inputs = video_manifest(config).to_dict("records")
+    if video_ids is not None:
+        inputs = [r for r in inputs if r["video_id"] in video_ids]
+        if set(r["video_id"] for r in inputs) != set(video_ids):
+            raise RuntimeError("unknown video requested for reference generation")
     if not inputs:
         raise RuntimeError(f"no MP4 inputs found in {source_dir}")
 
-    for source in inputs:
+    for record in inputs:
+        source = ROOT / record["source_path"]
+        video_id = record["video_id"]
         info = _source_info(source)
         full_gops = int(math.floor(info["duration"] * video["fps"] + 1e-6)) // video["gop_frames"]
         keep_frames = full_gops * video["gop_frames"]
         if keep_frames == 0:
             raise RuntimeError(f"video is shorter than one GOP: {source}")
-        output = output_dir / f"{source.stem}.mkv"
+        output = output_dir / f"{video_id}.mkv"
         job = {
             "source": portable_path(source), "source_sha256": sha256(source),
-            "keep_frames": keep_frames, "video": video,
+            "keep_frames": keep_frames, "video": video, "dataset_sha256": dataset_hash(config),
         }
         job_hash = stable_hash(job)
         sidecar = output.with_suffix(".json")
@@ -75,10 +82,16 @@ def normalize_videos(config: dict) -> None:
             temporary.replace(output)
             write_json(sidecar, {**job, "job_hash": job_hash, "output_sha256": sha256(output)})
         rows.append({
-            "video_id": source.stem, "source_path": portable_path(source),
+            "video_id": video_id, "split": record["split"], "dataset_sha256": dataset_hash(config), "source_path": portable_path(source),
             "reference_path": portable_path(output), "source_duration_s": info["duration"],
             "frame_count": keep_frames, "gop_count": full_gops,
             "fps": video["fps"], "width": video["width"], "height": video["height"],
             "source_sha256": sha256(source), "reference_sha256": sha256(output),
+            "reference_size_bytes": output.stat().st_size,
         })
-    pd.DataFrame(rows).to_parquet(output_dir / "manifest.parquet", index=False)
+    result = pd.DataFrame(rows)
+    manifest = output_dir / "manifest.parquet"
+    if video_ids is not None and manifest.exists():
+        previous = pd.read_parquet(manifest)
+        result = pd.concat([previous[~previous.video_id.isin(video_ids)], result], ignore_index=True)
+    result.to_parquet(manifest, index=False)

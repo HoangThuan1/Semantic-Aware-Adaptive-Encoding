@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "gop_frames": 30,
+  "fallback": false,
+  "video": {
+    "duration_s": 32.0,
+    "source_duration_s": 40.363333,
+    "source_size_bytes": 21298424,
+    "revision": "2e48a0340eb591fa1918f3375d55601a7f0bbab3",
+    "size_bytes": 2985984000,
+    "source": "bdd100k",
+    "source_path": "videos/bdd100k/114af10f-c3d93b85.mov",
+    "source_sha256": "2b0cf8643df8db82fc91d8e4213f76ed38dc8fa7c277a4e4cd3a6549041969a6",
+    "split": "test",
+    "video_id": "bdd_114af10f-c3d93b85",
+    "path": "videos/inference/bdd_114af10f-c3d93b85_test_32s.nv12",
+    "frames": 960,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "pixel_format": "nv12",
+    "start_frame": 0
+  },
+  "trace": {
+    "trace_id": "fcc_trace_213586_http---www.facebook",
+    "split": "test",
+    "offset_gop": 0,
+    "source_file": "fcc_ori/cooked_traces/trace_213586_http---www.facebook.com",
+    "raw_sha256": "9c9749ac4359d124f0e376781a8719cd4be083cb92934498d8c951e59e90e12e",
+    "processed_table_sha256": "1810b86c8c9a261ef6af2caa17fe7f2f64a624cf83480d1a24f3365972ac83f2",
+    "source": "fcc",
+    "path": "bw_trace/test_segment.json"
+  },
+  "policy": {
+    "source": "reports/benchmark/legacy_artifacts/rl/ddqn_selected.npz",
+    "trial": true,
+    "dataset_sha256": null,
+    "warmup_gops": 4,
+    "warmup_action": 4
+  },
+  "detector": {
+    "xmodel": "models/yolov5n/yolov5_nano_pt.xmodel",
+    "input_rgb": [
+      640,
+      640
+    ],
+    "confidence": 0.25,
+    "iou": 0.45,
+    "max_detections": 32,
+    "board_preprocessing": {
+      "scaler": "v4l2convert",
+      "scaler_rgb": [
+        1280,
+        720
+      ],
+      "arm_resize_rgb": [
+        640,
+        360
+      ],
+      "arm_resize": "OpenCV INTER_LINEAR",
+      "letterbox_rgb": [
+        640,
+        640
+      ],
+      "pad_top_bottom": 140,
+      "pad_value": 114
+    },
+    "weights_equivalence_verified": false,
+    "vendor_source_sha256": "43a1b897740cd5f861811436d5a8a4af8e9234c58aeb017b7708c53c72b3243d"
+  },
+  "strategies": [
+    "cbr",
+    "vbr",
+    "fixed_roi",
+    "rl"
+  ],
+  "baseline_bitrate_mbps": 1.5,
+  "fixed_roi_delta_qp": -6,
+  "reward": {
+    "full_vmaf": 0.45,
+    "roi_ssim": 0.25,
+    "bandwidth_violation": 0.2,
+    "bandwidth_utilization": 0.05,
+    "action_switch": 0.05,
+    "bandwidth_epsilon_mbps": 0.05,
+    "penalty_cap": 4.0
+  },
+  "files": {
+    "bw_trace/test_segment.json": {
+      "bytes": 4930,
+      "sha256": "ae4a5dc6413a3b3da2c91e6248a43b95bcaf9e23775c5f669796b57fa42e3f81"
+    },
+    "models/rl/ddqn_policy.npz": {
+      "bytes": 91010,
+      "sha256": "d7029b308bd8e0bebcfaad1a53225bcd795ab01b1c123aa00bbff8df7f6becb8"
+    },
+    "models/yolov5n/anchors.json": {
+      "bytes": 357,
+      "sha256": "69e7fa26371fb66d660b981a10a9cc8338e79a239af269c84050d7eb96ee6f90"
+    },
+    "models/yolov5n/labels.json": {
+      "bytes": 1024,
+      "sha256": "76ce1473f01bd271bab54429737358a97160629cf970c5ec8384c2777dd0bae9"
+    },
+    "models/yolov5n/md5sum.txt": {
+      "bytes": 33,
+      "sha256": "8dee1fbe21c649c924c97e5d50633ef171d2dc5b7e918210eeec6a6c9ac0b182"
+    },
+    "models/yolov5n/meta.json": {
+      "bytes": 209,
+      "sha256": "7feb46605e6b2650b278ee10f7a0d917aea35aa7cebe008cdeabaa5038fe7527"
+    },
+    "models/yolov5n/offline_yolov5n.pt": {
+      "bytes": 4062133,
+      "sha256": "4f180cf23ba0717ada0badd6c685026d73d48f184d00fc159c2641284b2ac0a3"
+    },
+    "models/yolov5n/yolov5_nano_pt.prototxt": {
+      "bytes": 679,
+      "sha256": "d7b085d584a7976727f40f27f4bec96d4358063e392792df31b90dab96fe9d22"
+    },
+    "models/yolov5n/yolov5_nano_pt.xmodel": {
+      "bytes": 2698722,
+      "sha256": "2a45d4dabd309cb8ebb52493139bb4b871980228e4904705e0ce28517bc0b646"
+    },
+    "videos/inference/bdd_114af10f-c3d93b85_test_32s.nv12": {
+      "bytes": 2985984000,
+      "sha256": "80f962286f83764393176ce40929ffc6fc0448bb2cf784af13f6057308f3d9a5"
+    },
+    "rl_runtime/__init__.py": {
+      "bytes": 85,
+      "sha256": "3fb130062c566e75567992efa31fef2b3421dcb10da304a6085aecbc5b1e4ff6"
+    },
+    "rl_runtime/board.py": {
+      "bytes": 31049,
+      "sha256": "c3f9e54c187e9c85d0441c745c40ca7f740b355a71ecd9c472df5704dfecc209"
+    },
+    "rl_runtime/common.py": {
+      "bytes": 5459,
+      "sha256": "3068a7af23976f8200c37f67f52d4f537cb9de37b3268fd90bfe0492adbafa91"
+    },
+    "rl_runtime/dpu_core.py": {
+      "bytes": 5987,
+      "sha256": "dfafd2bb94ebb6ef2c3b94da91745defec67e957bb3fe8aa8cf78993b8b67933"
+    },
+    "rl_runtime/policy_numpy.py": {
+      "bytes": 3051,
+      "sha256": "3f22ede9e2e4044ad2c64a698a30451d3b553860992d896769603f20b660f3e0"
+    },
+    "tools/compare_results.py": {
+      "bytes": 11238,
+      "sha256": "67e665c0ed5e736bd8c3c44cebb41b77eb8ed06c063a21790c01364639454ab6"
+    },
+    "tools/host_metrics.py": {
+      "bytes": 14373,
+      "sha256": "98dccfdb50e2fcdb9a2e02112d95d94e7ce50f64d996f26b57410d2ce04702b5"
+    },
+    "tools/offline_encoder.cpp": {
+      "bytes": 5689,
+      "sha256": "f5767efb365b7428ebc05d225266c4cf5ca3cdaf23012bee0fb85d0ebccc2b63"
+    },
+    "tools/offline_encoder_host": {
+      "bytes": 34664,
+      "sha256": "fbe7d830e7310cf7e695b7423632d068e4973d6104f66b59f094aaf5137691ce"
+    },
+    "tools/offline_reference.py": {
+      "bytes": 10036,
+      "sha256": "92ed16a9fa7534a65d010e36dbca47ed752c6d7b2cdea8acdb12d9ca8204d8d5"
+    },
+    "tools/preflight.sh": {
+      "bytes": 228,
+      "sha256": "e250c8708e8c5a84209bb2fb6ccb0b2b0bdb9f19bbe03fe57b4f844719deb4bc"
+    },
+    "tools/prepare_bundle.py": {
+      "bytes": 10028,
+      "sha256": "9f30135d8eccf370c8c3ba0326098b9e045c26eb7ce19577ee087a02ef280414"
+    },
+    "tools/replay_policy.py": {
+      "bytes": 1134,
+      "sha256": "4c304f65cdbd4b1ef0ba13c9b18d67ad2d4841e82e7865c99766ca2c8ce10579"
+    },
+    "tools/run_all.sh": {
+      "bytes": 216,
+      "sha256": "1b99882c5f3f1077d25e1c555e2a0565460807c0d98f5c7699a5e50e43d78284"
+    },
+    "tools/seal_bundle.py": {
+      "bytes": 1212,
+      "sha256": "dd9135baa365e4f4b818693eed6d2b64de7e9279d7d5dbaf4a6431f4e0d57cf2"
+    },
+    "vcu_test/smoke.sh": {
+      "bytes": 229,
+      "sha256": "c95e866a1f6ea612f21e8c5329a80694afa5f17d05bd00660241c7cd5806110b"
+    },
+    "models/rl/golden_policy.json": {
+      "bytes": 29871,
+      "sha256": "e764828b2c7e35f78a733830dff373cc773ce4cfd3b56abe4d051dc4818dc936"
+    }
+  }
+}

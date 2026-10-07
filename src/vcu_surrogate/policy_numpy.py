@@ -18,6 +18,7 @@ class NumpyPolicy:
             if (int(data["schema_version"]) != 1 or int(data["gop_frames"]) != 30
                     or int(data["fps"]) != 30):
                 raise RuntimeError("unsupported DDQN policy schema or GOP")
+            self.dataset_sha256 = str(data["dataset_sha256"]) if "dataset_sha256" in data else None
             self.state_columns = tuple(str(value) for value in data["state_columns"])
             self.mean = data["normalizer_mean"].astype(np.float64)
             self.std = data["normalizer_std"].astype(np.float64)

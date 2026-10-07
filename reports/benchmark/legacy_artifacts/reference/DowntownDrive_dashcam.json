@@ -1,0 +1,15 @@
+{
+  "job_hash": "9cb5ab1e0c78703e1f6709105f3dd25d6509199bc1fcc40ab952bd5979cb0a10",
+  "keep_frames": 1500,
+  "output_sha256": "4778bbd7b63914836c5ed2ef2a7e92e45db933c9e7fd9f7d7e2c7b4ba9fa94d5",
+  "source": "videos/DowntownDrive_dashcam.mp4",
+  "source_sha256": "2e76a9c66eb21394afcc67ca737aaccd00a17ab0da9e035de58703473655e0c5",
+  "video": {
+    "colorspace": "bt709",
+    "fps": 30,
+    "gop_frames": 30,
+    "height": 1080,
+    "pixel_format": "yuv420p",
+    "width": 1920
+  }
+}

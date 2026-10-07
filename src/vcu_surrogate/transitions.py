@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from .dataset import dataset_hash, video_manifest
 from .common import project_path, write_json
 from .rl_env import STATE_COLUMNS, WARMUP_ACTION, WARMUP_GOPS, reward_for
 
@@ -53,10 +54,11 @@ def build_transitions(config: dict, schedule_path: str | None = None) -> None:
     if "semantic_score" not in semantic_feature_columns:
         raise RuntimeError("semantic metadata does not contain semantic_score")
 
+    video_splits = dict(zip(video_manifest(config).video_id, video_manifest(config).split))
     grid_lookup = grid.set_index(["video_id", "gop_idx", "action_id"])
     for video_id, semantic_video in semantics.groupby("video_id", sort=True):
         semantic_video = semantic_video.sort_values("gop_idx").set_index("gop_idx")
-        for trace_id, trace in traces.groupby("trace_id", sort=True):
+        for trace_id, trace in traces[traces.split == video_splits[video_id]].groupby("trace_id", sort=True):
             trace = trace.sort_values("gop_idx").set_index("gop_idx")
             horizon = min(len(semantic_video), len(trace))
             if horizon < WARMUP_GOPS + 2:
@@ -129,7 +131,8 @@ def build_transitions(config: dict, schedule_path: str | None = None) -> None:
     pd.DataFrame(rows).to_parquet(processed / "transitions.parquet", index=False)
     pd.DataFrame(schedule_rows).to_parquet(processed / "action_schedules.parquet", index=False)
     write_json(processed / "transition_schema.json", {
-        "schema_version": 1,
+        "schema_version": 2,
+        "dataset_sha256": dataset_hash(config),
         "gop_frames": int(config["video"]["gop_frames"]),
         "fps": int(config["video"]["fps"]),
         "state_columns": list(STATE_COLUMNS),
