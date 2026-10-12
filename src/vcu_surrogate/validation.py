@@ -14,7 +14,7 @@ import torch
 import torchvision
 
 from .assets import assert_downloads
-from .common import ROOT, project_path, run, write_json
+from .common import ROOT, project_path, run, sha256, write_json
 from .rl_env import GridDataset
 from .video import count_frames
 
@@ -68,7 +68,7 @@ def preflight(config: dict) -> None:
 
 def _frame_types(path: Path) -> list[tuple[int, str]]:
     result = run([
-        "ffprobe", "-v", "error", "-select_streams", "v:0", "-show_frames",
+        "ffprobe", "-v", "error", "-threads", "2", "-select_streams", "v:0", "-show_frames",
         "-show_entries", "frame=key_frame,pict_type", "-of", "json", path,
     ], capture=True)
     frames = json.loads(result.stdout)["frames"]
@@ -77,7 +77,7 @@ def _frame_types(path: Path) -> list[tuple[int, str]]:
 
 def _validate_encode(encode, gop: int) -> None:
     path = ROOT / encode.encoded_path
-    if count_frames(path) != encode.frame_count:
+    if count_frames(path, threads=2) != encode.frame_count:
         raise RuntimeError(f"encoded frame count mismatch: {path}")
     types = _frame_types(path)
     if len(types) != encode.frame_count:
@@ -90,7 +90,13 @@ def _validate_encode(encode, gop: int) -> None:
             raise RuntimeError(f"non-P frame at frame {index}: {path}")
 
 
-def validate_dataset(config: dict) -> None:
+def _verify_encode_checksum(encode) -> None:
+    path = ROOT / encode.encoded_path
+    if sha256(path) != encode.encoded_sha256:
+        raise RuntimeError(f"encoded bitstream checksum mismatch: {path}")
+
+
+def validate_dataset(config: dict, prior_validation_dir: Path | None = None) -> None:
     assert_downloads(config)
     artifacts = project_path(config, "artifacts")
     processed = project_path(config, "processed_data")
@@ -154,13 +160,20 @@ def validate_dataset(config: dict) -> None:
         raise RuntimeError("one or more GOPs do not contain the complete action grid")
     if not (grid.frame_count == gop).all() or not (grid.packet_count == gop).all() or not (grid.key_packets == 1).all():
         raise RuntimeError("grid contains an invalid GOP frame/packet/keyframe count")
+    stride = config.get("metrics", {}).get("sample_stride", 1)
+    if stride > 1 and ("metric_sample_count" not in grid or
+                       not (grid.metric_sample_count == gop // stride).all()):
+        raise RuntimeError("grid contains invalid metric sample coverage")
     mandatory_finite = ["actual_bitrate_mbps", "vmaf", "psnr", "ssim"]
     if not np.isfinite(grid[mandatory_finite].to_numpy(dtype=float)).all():
         raise RuntimeError("non-finite mandatory metric")
-    if not set(catalog.split) == {"train", "validation", "test", "excluded"}:
-        raise RuntimeError("bandwidth split is incomplete")
-    if set(traces.split) != {"train", "validation", "test"} or len(catalog) != 6:
-        raise RuntimeError("Mahimahi LTE uplink trace selection is invalid")
+    if set(catalog.split) != {"train", "validation", "test"} or set(catalog.source) != {"fcc", "norway"}:
+        raise RuntimeError("FCC/Norway bandwidth split incomplete")
+    if catalog.groupby("group_id").split.nunique().max() != 1:
+        raise RuntimeError("trace session leaks between splits")
+    video_splits = reference.set_index("video_id").split
+    if not (transitions.video_id.map(video_splits) == transitions.split).all():
+        raise RuntimeError("transition video leaks between splits")
     if (traces.bandwidth_mbps < 0).any():
         raise RuntimeError("negative bandwidth value")
     if transitions.empty or not transitions.semantic_score.between(0, 1).all():
@@ -205,9 +218,24 @@ def validate_dataset(config: dict) -> None:
     if not np.allclose(previous.r_prev_actual_mbps, previous.expected_r_prev_actual_mbps):
         raise RuntimeError("transition previous bitrate does not match the previous selected action")
 
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        for _ in pool.map(lambda encode: _validate_encode(encode, gop), encodes.itertuples(index=False)):
-            pass
+    if prior_validation_dir is not None:
+        previous = json.loads((prior_validation_dir / "validation_report.json").read_text())
+        manifest = json.loads((prior_validation_dir / "benchmark_manifest.json").read_text())
+        if previous.get("status") != "passed" or manifest.get("status") != "complete":
+            raise RuntimeError("previous encode structure validation is not complete")
+        for key in ("reference", "encodes", "grid"):
+            relative = str(required[key].relative_to(ROOT))
+            if manifest["input_sha256"].get(relative) != sha256(required[key]):
+                raise RuntimeError(f"prior validation input changed: {key}")
+        if previous.get("videos") != len(reference) or previous.get("grid_rows") != len(grid):
+            raise RuntimeError("prior encode validation coverage changed")
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            for _ in pool.map(_verify_encode_checksum, encodes.itertuples(index=False)):
+                pass
+    else:
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            for _ in pool.map(lambda encode: _validate_encode(encode, gop), encodes.itertuples(index=False)):
+                pass
 
     GridDataset(config)
 
@@ -217,6 +245,7 @@ def validate_dataset(config: dict) -> None:
         "trace_count": len(catalog), "transition_count": len(transitions),
         "detector": config["yolo"]["variant"], "detector_weights": config["yolo"]["weights"],
         "cuda_device": torch.cuda.get_device_name(0),
+        "encode_structure_validation": "reused_after_sha256_verification" if prior_validation_dir else "decoded",
     }
     write_json(reports / "validation_report.json", report)
     print(json.dumps(report, indent=2))

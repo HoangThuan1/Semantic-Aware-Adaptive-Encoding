@@ -8,9 +8,10 @@ import numpy as np
 import pandas as pd
 from gymnasium import spaces
 
-from .assets import LTE_UPLINK_SHA256, assert_downloads
+from .assets import assert_downloads
+from .dataset import dataset_hash, video_manifest
 from .common import project_path
-from .traces import TRACE_SPLITS, parse_mahimahi_trace
+from .traces import assert_trace_sources, parse_throughput_trace
 
 STATE_COLUMNS = ("bw_k_minus_4", "bw_k_minus_3", "bw_k_minus_2", "bw_k_minus_1",
                  "r_prev_actual_mbps", "semantic_score")
@@ -49,20 +50,30 @@ class GridDataset:
         if not schema_path.is_file():
             raise RuntimeError(f"transition schema missing: {schema_path}")
         schema = json.loads(schema_path.read_text())
-        if (schema.get("schema_version") != 1 or schema.get("gop_frames") != 30 or schema.get("fps") != 30
+        if (schema.get("schema_version") != 2 or schema.get("gop_frames") != 30 or schema.get("fps") != 30
                 or schema.get("state_columns") != list(STATE_COLUMNS)
                 or schema.get("action_count") != 32):
             raise RuntimeError("transition schema does not match GOP30 DDQN contract")
+        self.dataset_sha256 = dataset_hash(config)
+        if schema.get("dataset_sha256") != self.dataset_sha256:
+            raise RuntimeError("transition dataset manifest hash mismatch")
+        if schema.get("reward_config") != config["reward"]:
+            raise RuntimeError("transition reward config mismatch; rebuild transitions")
+        videos = video_manifest(config)
+        self.video_by_split = {split: sorted(frame.video_id.tolist()) for split, frame in videos.groupby("split")}
         self.grid = pd.read_parquet(artifacts / "metrics" / "gop_action_grid.parquet")
         self.semantics = pd.read_parquet(artifacts / "metadata" / "gop_semantics.parquet")
         self.traces = pd.read_parquet(processed / "bandwidth_traces.parquet")
+        if not {"timestamp_s", "bandwidth_mbps"}.issubset(self.traces.columns):
+            raise RuntimeError("FCC/Norway trace requires timestamp_s and bandwidth_mbps; no fallback")
         catalog = pd.read_parquet(processed / "trace_catalog.parquet")
-        expected_catalog = {(name.removesuffix(".up"), name, TRACE_SPLITS.get(name, "excluded"), digest)
-                            for name, digest in LTE_UPLINK_SHA256.items()}
-        observed_catalog = set(catalog[["trace_id", "source_file", "split", "raw_sha256"]]
-                               .itertuples(index=False, name=None))
-        if observed_catalog != expected_catalog or len(catalog) != len(expected_catalog):
-            raise RuntimeError("trace catalog does not match pinned LTE uplink split and SHA-256")
+        records = assert_trace_sources(config)
+        columns = ["trace_id", "source_file", "source", "split", "raw_sha256", "group_id"]
+        expected_catalog = {tuple(row[c] for c in columns) for row in records}
+        observed_catalog = set(catalog[columns].itertuples(index=False, name=None))
+        if observed_catalog != expected_catalog or len(catalog) != len(records):
+            raise RuntimeError("trace catalog source/split/checksum mismatch")
+        self.trace_source = dict(zip(catalog.trace_id, catalog.source))
         action_space = pd.read_parquet(artifacts / "encodes" / "action_space.parquet")
         expected_actions = {(i * len(config["encoder"]["roi_delta_qp"]) + j, float(bitrate), int(delta))
                             for i, bitrate in enumerate(config["encoder"]["bitrates_mbps"])
@@ -90,6 +101,10 @@ class GridDataset:
                 or not (self.grid.packet_count == 30).all()
                 or not (self.grid.key_packets == 1).all()):
             raise RuntimeError("action grid has incompatible GOP structure")
+        stride = config.get("metrics", {}).get("sample_stride", 1)
+        if stride > 1 and ("metric_sample_count" not in self.grid or
+                           not (self.grid.metric_sample_count == 30 // stride).all()):
+            raise RuntimeError("action grid has incompatible metric sampling")
         self.grid_lookup = self.grid.set_index(["video_id", "gop_idx", "action_id"])
         if set(self.grid.video_id) != set(self.semantics.video_id):
             raise RuntimeError("grid/semantic video IDs differ")
@@ -116,6 +131,8 @@ class GridDataset:
             frame = frame.sort_values("gop_idx")
             if frame.gop_idx.tolist() != list(range(len(frame))):
                 raise RuntimeError(f"non-contiguous bandwidth trace: {trace_id}")
+            if not np.array_equal(frame.timestamp_s.to_numpy(dtype=float), np.arange(len(frame), dtype=float)):
+                raise RuntimeError(f"invalid one-second trace timestamps: {trace_id}")
             values = frame.bandwidth_mbps.to_numpy(dtype=np.float64)
             if not np.isfinite(values).all() or (values < 0).any():
                 raise RuntimeError(f"invalid bandwidth trace: {trace_id}")
@@ -123,12 +140,17 @@ class GridDataset:
         if set(self.trace_by_split) != {"train", "validation", "test"}:
             raise RuntimeError("required train/validation/test traces missing")
         raw = project_path(config, "raw_data")
-        for name, split in TRACE_SPLITS.items():
-            trace_id = name.removesuffix(".up")
-            expected = parse_mahimahi_trace(raw / "mahimahi" / "traces" / name)
+        if set(videos.video_id) != set(self.semantic_by_video):
+            raise RuntimeError("video manifest and action grid differ")
+        for record in records:
+            trace_id, split = record["trace_id"], record["split"]
+            expected = parse_throughput_trace(raw / "network_traces" / record["source_file"])
             actual = self.trace_by_split[split].get(trace_id)
             if actual is None or not np.array_equal(actual, expected):
-                raise RuntimeError(f"processed bandwidth trace differs from pinned source: {name}")
+                raise RuntimeError(f"processed trace differs from source: {trace_id}")
+        for split in ("train", "validation", "test"):
+            if {self.trace_source[t] for t in self.trace_by_split[split]} != {"fcc", "norway"}:
+                raise RuntimeError(f"both trace sources required in {split}")
         self.reward_config = config["reward"]
         self.block_seconds = int(config["rl"]["synthetic_block_seconds"])
         if self.block_seconds != 10:
@@ -137,8 +159,8 @@ class GridDataset:
 
     def normalizer(self) -> Normalizer:
         train_bw = np.concatenate(list(self.trace_by_split["train"].values()))
-        real = self.grid.actual_bitrate_mbps.to_numpy(dtype=np.float64)
-        semantic = self.semantics.semantic_score.to_numpy(dtype=np.float64)
+        real = self.grid[self.grid.video_id.isin(self.video_by_split["train"])].actual_bitrate_mbps.to_numpy(dtype=np.float64)
+        semantic = self.semantics[self.semantics.video_id.isin(self.video_by_split["train"])].semantic_score.to_numpy(dtype=np.float64)
         mean = np.array([*[float(train_bw.mean())] * 4, float(real.mean()), float(semantic.mean())])
         std = np.array([*[float(train_bw.std())] * 4, float(real.std()), float(semantic.std())])
         if not np.isfinite(mean).all() or not np.isfinite(std).all() or (std <= 0).any():
@@ -151,41 +173,67 @@ class GridDataset:
         except KeyError as error:
             raise RuntimeError(f"missing action grid row: {video_id}/{k}/{action}") from error
 
+    def sample_trace(self, split: str, length: int, rng: np.random.Generator) -> str:
+        source = str(rng.choice(["fcc", "norway"]))
+        candidates = sorted(t for t, bw in self.trace_by_split[split].items()
+                            if self.trace_source[t] == source and len(bw) >= length)
+        if not candidates:
+            raise RuntimeError(f"no {source} {split} trace long enough for {length} GOPs")
+        return str(rng.choice(candidates))
+
     def synthetic(self, length: int, rng: np.random.Generator) -> tuple[np.ndarray, list[dict]]:
         sources = self.trace_by_split["train"]
         blocks, lineage = [], []
         while sum(len(block) for block in blocks) < length:
-            trace_id = str(rng.choice(list(sources)))
+            trace_id = self.sample_trace("train", self.block_seconds, rng)
             source = sources[trace_id]
             if len(source) < self.block_seconds:
                 raise RuntimeError(f"trace too short for synthetic block: {trace_id}")
             start = int(rng.integers(0, len(source) - self.block_seconds + 1))
             blocks.append(source[start:start + self.block_seconds])
-            lineage.append({"trace_id": trace_id, "start_gop": start, "length": self.block_seconds})
+            lineage.append({"trace_id": trace_id, "start_gop": start, "length": min(self.block_seconds, length - sum(len(b) for b in blocks[:-1])),
+                            "source": self.trace_source[trace_id]})
         return np.concatenate(blocks)[:length].copy(), lineage
 
     def evaluation_specs(self, split: str) -> list[dict]:
         if split not in {"validation", "test"}:
             raise ValueError("evaluation split must be validation or test")
         specs = []
-        for video_id, semantic in sorted(self.semantic_by_video.items()):
+        for video_id in self.video_by_split[split]:
+            semantic = self.semantic_by_video[video_id]
             length = len(semantic)
+            before = len(specs)
             for trace_id, trace in sorted(self.trace_by_split[split].items()):
                 if len(trace) < length:
-                    raise RuntimeError(f"trace shorter than video: {trace_id}/{video_id}")
+                    continue
                 for offset in range(0, len(trace) - length + 1, length):
                     specs.append({"video_id": video_id, "trace_id": trace_id,
                                   "trace_start": offset, "synthetic": False})
+            if len(specs) == before:
+                raise RuntimeError(f"no {split} trace long enough for video {video_id}")
         if not specs:
             raise RuntimeError(f"no {split} evaluation episodes")
         return specs
+
+
+def bandwidth_penalty(ratio, config: dict):
+    """Shared scalar/array penalty; linear shoulder is continuous at ratio 1.5."""
+    excess = np.maximum(0.0, np.asarray(ratio, dtype=float) - 1.0)
+    shape = config.get("bandwidth_penalty_shape", "quadratic")
+    if shape == "quadratic":
+        penalty = excess ** 2
+    elif shape == "linear_shoulder":
+        penalty = np.where(excess <= .5, excess, excess ** 2 + .25)
+    else:
+        raise ValueError(f"unknown bandwidth penalty shape: {shape}")
+    return np.minimum(penalty, float(config["penalty_cap"]))
 
 
 def reward_for(row: pd.Series, bandwidth: float, previous: pd.Series, config: dict) -> dict:
     epsilon = float(config["bandwidth_epsilon_mbps"])
     cap = float(config["penalty_cap"])
     ratio = float(row.actual_bitrate_mbps) / max(bandwidth, epsilon)
-    violation = min(max(0.0, ratio - 1.0) ** 2, cap)
+    violation = float(bandwidth_penalty(ratio, config))
     utilization = min(ratio, cap)
     switch = 0.5 * (abs(int(row.bitrate_index) - int(previous.bitrate_index)) / 7.0
                     + abs(int(row.roi_index) - int(previous.roi_index)) / 3.0)
@@ -229,9 +277,9 @@ class OfflineGOPEnv(gym.Env):
         if seed is not None:
             self.rng = np.random.default_rng(seed)
         options = options or {}
-        video_id = str(options.get("video_id", self.rng.choice(list(self.dataset.semantic_by_video))))
-        if video_id not in self.dataset.semantic_by_video:
-            raise RuntimeError(f"unknown video: {video_id}")
+        video_id = str(options.get("video_id", self.rng.choice(self.dataset.video_by_split[self.split])))
+        if video_id not in self.dataset.video_by_split[self.split]:
+            raise RuntimeError(f"video not in {self.split}: {video_id}")
         self.video_id = video_id
         self.semantics = self.dataset.semantic_by_video[video_id]
         self.synthetic = bool(options.get("synthetic", False))
@@ -243,7 +291,8 @@ class OfflineGOPEnv(gym.Env):
             self.trace_start = 0
         else:
             traces = self.dataset.trace_by_split[self.split]
-            self.trace_id = str(options.get("trace_id", self.rng.choice(list(traces))))
+            self.trace_id = (str(options["trace_id"]) if "trace_id" in options else
+                             self.dataset.sample_trace(self.split, len(self.semantics), self.rng))
             if self.trace_id not in traces:
                 raise RuntimeError(f"trace not in {self.split}: {self.trace_id}")
             source = traces[self.trace_id]

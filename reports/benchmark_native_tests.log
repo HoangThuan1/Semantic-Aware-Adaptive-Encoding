@@ -1,4 +1,0 @@
-docker run --rm -e VCU_PROJECT_ROOT=/workspace \
-  -v "/home/thuanhxfg/my_pytorch/rl:/workspace" -w /workspace vcu-pipeline-test:0.1.0 \
-  sh -lc 'PYTHONPATH=/workspace/src python3 -m compileall -q src tests && PYTHONPATH=/workspace/src python3 -m pytest -q tests'
-.......s..........                                                       [100%]

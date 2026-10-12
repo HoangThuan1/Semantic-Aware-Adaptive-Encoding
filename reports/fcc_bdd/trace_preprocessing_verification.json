@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "trace_count": 127,
+  "sources": {
+    "norway": 68,
+    "fcc": 59
+  },
+  "raw_timestamp_mbps_rows": 78997,
+  "one_second_rows": 150177,
+  "zero_bandwidth_bins": 260,
+  "fallback": false
+}

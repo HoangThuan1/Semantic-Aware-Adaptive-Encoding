@@ -1,5 +1,7 @@
 # Benchmark chất lượng video, bitrate, ngữ nghĩa và thích ứng mạng
 
+Log thay đổi reward và kết quả: [ORACLE_REWARD_LOG.md](../reports/fcc_bdd/benchmark/ORACLE_REWARD_LOG.md).
+
 ## Chạy
 
 Cần dataset/grid và policy đã được tạo bằng pipeline hiện có. Benchmark không encode/train lại và không thay đổi các artifact nguồn.
@@ -18,13 +20,27 @@ docker run --rm --gpus all --ipc=host --user "$(id -u):$(id -g)" \
   benchmark --frames-per-gop 3 --batch-size 8
 ```
 
-Đọc kết quả ở `reports/benchmark/REPORT.md`. Lần chạy hoàn tất có `manifest.json` với `status=complete`. Cache từng video/action được kiểm input/config/code/output hash; job thiếu hoặc mismatch được tính lại. Có thể chạy lại sau ngắt để dùng các shard đã hoàn tất. Khi thay implementation benchmark, hash code đổi làm cache mất hiệu lực. Không sửa file code trong lúc benchmark đang chạy.
+Đọc kết quả ở `reports/fcc_bdd/benchmark/REPORT.md`. Lần chạy hoàn tất có `manifest.json` với `status=complete`. Cache từng video/action được kiểm input/config/code/output hash; job thiếu hoặc mismatch được tính lại. Có thể chạy lại sau ngắt để dùng các shard đã hoàn tất. Khi thay implementation benchmark, hash code đổi làm cache mất hiệu lực. Không sửa file code trong lúc benchmark đang chạy.
 
-Mặc định đo thêm 3 frame tại offsets `[0,14,29]` trên **mọi GOP và mọi action**. VMAF và ROI metric cũ vẫn dùng tất cả frame. Bộ benchmark bao phủ các chiều đánh giá; mặc định không đo detector trên mọi frame. Chọn 30 nếu cần độ phủ thời gian đầy đủ, đổi lại tăng thời gian GPU/CPU. Frame sampled của reference tạm được lưu bằng mmap rồi xóa sau mỗi video, hạn chế bộ nhớ và tránh decode reference 32 lần. Batch size chỉ điều khiển detector, không thay đổi lịch lấy mẫu.
+Mặc định đo thêm 3 frame tại offsets `[0,14,29]` trên **mọi GOP và mọi action**. VMAF và ROI metric của grid hiện lấy mẫu stride 5 (6 frame/GOP), VMAF giữ ngữ cảnh chuyển động đầy đủ. Bộ benchmark bao phủ các chiều đánh giá; mặc định không đo detector trên mọi frame. Chọn 30 nếu cần độ phủ thời gian đầy đủ cho metric bổ sung; lựa chọn này không đổi lịch sampling của grid nguồn. Frame sampled của reference tạm được lưu bằng mmap rồi xóa sau mỗi video, hạn chế bộ nhớ và tránh decode reference 32 lần. Batch size chỉ điều khiển detector, không thay đổi lịch lấy mẫu.
+
+## Lần chạy FCC/BDD
+
+`scripts/run_fcc_bdd.py` dùng `scripts/prepare_grid_compact.py`: xử lý lần lượt từng video với đủ 32 action, metrics lấy mẫu mỗi 5 frame; sau mỗi hai video hoàn tất metrics, chạy benchmark 3 frame/GOP cho cặp đó rồi tiếp tục. Video cuối lẻ được benchmark sau khi hết phần local. Giữ FFV1, video nguồn, encodes, manifest/checksum, metric frame/GOP và cache benchmark. Stage metrics tổng hợp cache; stage benchmark cuối dùng lại cache đã có và đo những action còn thiếu; train/evaluate dùng các split và cấu hình đã khóa. Tiến độ nằm trong `reports/fcc_bdd/compact_progress.json`.
+
+Không áp dụng giới hạn dung lượng nhân tạo hoặc dừng chờ compact VDisk. Runner tiếp tục đến train/evaluate/export/render/benchmark. `scripts/watch_fcc_bdd_storage.py` chỉ ghi telemetry dung lượng mỗi 5 giây, không dừng container.
+
+Mỗi reference được decode FFV1 một lần sang YUV420 raw, sau đó chuyển YUV thành BGR cache bằng đúng libswscale mà OpenCV dùng. Sáu worker đọc chung hai cache trên SSD. Mỗi action cũng chỉ decode một lần; từng frame YUV đi qua VMAF để giữ ngữ cảnh chuyển động; chỉ frame mẫu chuyển BGR và tính ROI. Luồng pipe chỉ giữ vài frame trong RAM. Test đối chiếu từng pixel BGR và tất cả metric với cách cũ, yêu cầu kết quả bằng nhau.
+
+Kiểm checksum reference, định dạng và số frame trước khi dùng. Cache đầy đủ có checksum YUV/BGR trong `compact_progress.json` để dùng lại sau restart; cache không khớp được tạo lại từ nguồn đã kiểm tra. Sau metrics, xóa cache YUV/BGR; benchmark tạo cache frame sampled riêng rồi xóa. Xóa JSON VMAF sau khi xác minh checksum và coverage metrics của đủ 32 action; giữ parquet frame/GOP để chạy benchmark sau. FFV1 và encode luôn được giữ. Artifact dùng chung `artifacts/`.
+
+ROI SSIM dùng box filter OpenCV float64 với cùng cửa sổ, sample covariance, K1/K2, pooling ba kênh và bỏ viền như skimage; kiểm thử sai số 1e-10. Metrics dùng 6 worker CPU × 2 thread VMAF, không dùng CUDA VMAF, chung hàng đợi action; lấy mẫu mỗi 5 frame (6 mẫu/GOP), giữ ngữ cảnh VMAF đầy đủ; decoder FFmpeg/ROI 2 luồng, filter graph FFmpeg 1 luồng và OpenCV 1 luồng. Resume encode kiểm SHA-256 bitstream thay vì decode lại video đã xác minh. Resume giữ các metrics đã hoàn tất với đúng provenance.
+
+Thử 60 frame thật dưới tải đang chạy: VMAF FFV1 36.73 s, YUV cache 28.86 s; ROI FFV1 238.90 s, BGR cache 103.16 s. Kết quả từng frame giống hệt; đây là đo mẫu dưới tải, chưa phải tốc độ toàn pipeline. Reference của video chưa encode được tạo lại từ nguồn/checksum và cấu hình normalization, cập nhật provenance tương ứng.
 
 ## 1. Chất lượng ROI và non-ROI
 
-Giữ nguyên full-frame VMAF, PSNR/SSIM và ROI PSNR/SSIM của pipeline, bổ sung một định nghĩa nhất quán để so sánh hai vùng:
+VMAF, PSNR/SSIM và ROI PSNR/SSIM của pipeline lấy mẫu mỗi 5 frame. Benchmark giữ cách lấy mẫu riêng và bổ sung một định nghĩa nhất quán để so sánh hai vùng:
 
 - ROI là union của box YOLO gốc trên reference; non-ROI là phần bù của mask ấy. Không dùng padded encoder box vì cần cố định vùng đánh giá giữa các action.
 - Chuyển BGR thành grayscale bằng OpenCV; không gọi grayscale này là chính xác plane Y của bitstream YUV. Tên cột `_y` biểu diễn phép đo luma proxy.
@@ -62,18 +78,19 @@ Các metric bổ sung:
 
 ## 4. Thích ứng bandwidth
 
-Mọi policy dùng cùng episode và warm-up 4 GOP action 4. Test Verizon giữ nguyên tập episode của `GridDataset.evaluation_specs()`, có thể so với rollout DDQN cũ.
+Mọi policy dùng cùng episode và warm-up 4 GOP action 4. Test FCC/Norway giữ nguyên tập episode của `GridDataset.evaluation_specs()`, có thể so với rollout DDQN cũ.
 
 Strategy:
 
-- 32 action cố định: 8 bitrate × 4 ROI delta.
-- DDQN của ba seed và selected NPZ.
-- Fixed baseline chọn trên mean validation return.
-- Heuristic chọn trên validation từ 2 estimator (last hoặc harmonic mean 4 mẫu bw), 3 safety factor (0.6/0.8/1.0), 5 ROI mode (0,1,2,3 hoặc theo semantic).
-- Hai heuristic prespecified harmonic 0.8, có/không semantic ROI để ablation.
-- Oracle DP: biết toàn bộ bw và grid trong episode, tối đa tổng reward gồm switch penalty. Quy hoạch động tối ưu chuỗi action theo previous action. Oracle là trần reward trong surrogate, không phải deployable controller và không tối ưu riêng queue latency.
+- DDQN selected: checkpoint tốt nhất theo validation, train lại với reward hiện tại.
+- DDQN fixed ROI: cùng checkpoint, chọn bitrate bằng Q trong 8 action khóa ROI ΔQP −6; không train riêng.
+- CBR mô phỏng: 32 cấu hình target bitrate/ROI cố định, chọn một trên validation. Thêm filler ảo tới target nếu payload thấp hơn; overshoot giữ bitrate thực.
+- VBR mô phỏng: target theo semantic `base × (1 + gain × (2S − 1))`, chọn mức bitrate grid gần nhất. Base có 8 mức, gain 0.5/1.0, ROI mode 0/1/2/3/semantic: 80 candidate chọn bằng validation.
+- Optimal offline (oracle DP): biết toàn bộ bandwidth và outcome grid; tối đa tổng reward gồm switching penalty. Đây là trần reward trong surrogate.
 
-Heuristic chọn bitrate lớn nhất ≤safety×bw estimate; nếu không có mức nào phù hợp, chọn 0.5 Mbps. Harmonic estimate bằng 0 nếu có sample 0. ROI semantic index là tổng ba điều kiện S≥0.25, S≥0.5, S≥0.75. Các ngưỡng định trước, không học từ test.
+CBR/VBR không dùng bandwidth để chọn action. Semantic ROI index là tổng điều kiện S≥0.25, S≥0.5, S≥0.75. Hai baseline dùng encode grid hiện có, không phải encoder CBR/constant-quality VBR chạy liên tục.
+
+Reward hiện tại: `0.45*VMAF/100 + 0.25*ROI_SSIM - 1.0*violation - 0.05*switch`. Với `e=max(0,R/max(BW,0.05)-1)`, violation = `min(e nếu e≤0.5, còn lại e²+0.25, 4)`. Switch = `0.5*(|Δbitrate_index|/7 + |ΔROI_index|/3)`. Không phạt backlog/deadline.
 
 Các metric: reward/GOP, return, full/region quality, semantic counts/rates, actual bitrate, delivered throughput, capacity utilization/unused capacity của queue, violation rate, excess Mbit, switch rate và violation ở GOP ngay sau bandwidth giảm hơn 50%. Các metric queue được gắn tên rõ là mô phỏng.
 
@@ -95,10 +112,14 @@ Mô hình không có RTT, loss, socket scheduling, packetization, frame pacing, 
 
 ## 6. So sánh ghép cặp và tái lập
 
-`paired_policy_comparisons.csv` tính DDQN selected − từng baseline trên cùng split/video/trace/offset, báo mean difference theo episode và theo video. CI95% bootstrap resample **video cluster**, 2.000 lần, seed 20261004. Đây là mô tả biến thiên của 5 nội dung; trace windows giữa video vẫn tương quan nên không diễn giải thành chứng minh tổng quát hóa mạng.
+`paired_policy_comparisons.csv` tính DDQN selected − từng baseline trên cùng split/video/trace/offset, báo mean difference theo episode và theo video. CI95% bootstrap resample **video cluster**, 2.000 lần, seed 20261004. Đây là mô tả biến thiên của các video trong split; trace windows giữa video vẫn tương quan nên không diễn giải thành chứng minh tổng quát hóa mạng.
 
 `manifest.json` ghi hash input/code, FPS sampling, hardware/software và elapsed time. Sidecar từng shard ghi hash reference/encode gián tiếp trong job hash và hash kết quả. Đổi weights, config, reference, detection hoặc code làm cache tính lại. Raw encode/reference được xác minh hash với manifest nguồn khi benchmark chạy.
 
-Bộ benchmark vẫn có giới hạn của dataset nguồn: video dùng chung giữa train/test, semantic của GOP hiện tại nhìn toàn GOP, outcome grid từ action cố định không giữ đúng rate-control khi policy switch, chưa có mạng/VCU thật. Kết quả so sánh là trong phạm vi surrogate này.
+Bộ benchmark vẫn có giới hạn của dataset nguồn: video tách độc lập giữa train/test, semantic của GOP hiện tại nhìn toàn GOP, outcome grid từ action cố định không giữ đúng rate-control khi policy switch, chưa có mạng/VCU thật. Kết quả so sánh là trong phạm vi surrogate này.
 
 Sau chạy, `verification.json` ghi các kiểm tra kết quả và test suite. `manifest.elapsed_s` là thời gian lần gọi hoàn tất cuối cùng, có thể đã dùng cache; tổng thời gian đo các shard được ghi riêng trong verification, không phải tổng thời gian wall-clock của toàn phiên làm việc.
+
+Đo CPU + CUDA trên `bdd_114af10f-c3d93b85`: 6 action mới (5 CPU, 1 CUDA), mỗi action 1.200 frame/240 mẫu, hoàn thành trong 210.965 giây, tương đương 102.387 action/giờ, gồm startup worker. CUDA chạy riêng action 0 trong 107.686 giây, VMAF/PSNR/SSIM/ROI trùng hoàn toàn với mẫu CPU đã lưu. Đây là đo một lượt, chưa bao gồm encode, reference cache, benchmark hoặc train.
+
+So sánh cùng 6 action 0–5 của `bdd_16dce9f0-a914a65e`, 1.200 frame/action, stride 5, cùng reference cache và worker fork: CPU 6 × 2 thread đạt 124.030 giây (174.151 action/giờ); CPU 5 × 2 thread + CUDA 1 đạt 122.816 giây (175.873 action/giờ). Sai lệch tốc độ khoảng 1%, chưa chứng minh lợi ích đáng kể của CUDA. Metrics hai lượt đạt parity. CPU được đo trước; chưa tính encode/reference/benchmark và không dùng số đo này để khẳng định tốc độ toàn pipeline.

@@ -1,0 +1,22 @@
+{
+  "cbr": {
+    "family": "cbr",
+    "parameters": {
+      "cbr": 1
+    },
+    "strategy": "cbr_action_01",
+    "validation_mean_return": 1.4714240995193315
+  },
+  "vbr": {
+    "family": "vbr",
+    "parameters": {
+      "vbr": {
+        "base_mbps": 0.5,
+        "gain": 0.5,
+        "roi_mode": 1
+      }
+    },
+    "strategy": "vbr_base0.5_gain0.5_roi1",
+    "validation_mean_return": 2.545542036203665
+  }
+}

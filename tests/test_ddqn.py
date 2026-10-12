@@ -29,7 +29,8 @@ def test_double_dqn_uses_online_argmax_and_target_value() -> None:
     assert values.tolist() == [3.5, 4.0]
 
 
-def test_numpy_policy_matches_pytorch(tmp_path) -> None:
+def test_numpy_policy_matches_pytorch(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr("vcu_surrogate.ddqn.dataset_hash", lambda config: "fixture-dataset")
     torch.manual_seed(13)
     network = QNetwork()
     normalizer = Normalizer(np.array([1., 2., 3., 4., 5., 0.5]),
@@ -41,6 +42,7 @@ def test_numpy_policy_matches_pytorch(tmp_path) -> None:
     _export_npz(policy, network, normalizer, config)
     raw_states = np.random.default_rng(13).normal(size=(128, 6))
     assert _check_policy_parity(network, policy, raw_states, normalizer) < 1e-5
+    assert NumpyPolicy(policy).dataset_sha256 == "fixture-dataset"
     action, bitrate, delta = NumpyPolicy(policy).act(raw_states[0])
     assert 0 <= action < 32
     assert bitrate == config["encoder"]["bitrates_mbps"][action // 4]

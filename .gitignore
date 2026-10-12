@@ -1,9 +1,42 @@
-artifacts/
-data/raw/
-data/processed/
-models/*.pt
+# Large pipeline outputs stay local; publish the selected ARM policy.
+/artifacts/*
+!/artifacts/rl/
+/artifacts/rl/*
+!/artifacts/rl/ddqn_selected.npz
+/data/raw/
+/data/processed/
+/models/*.pt
+/videos/
+
+# Python caches and local environments.
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+.venv/
+venv/
 
+# Keep reports, plots, summary CSV/JSON and learning curves visible.
+# Per-frame data, rollout partitions, caches and logs can be regenerated.
+/reports/**/cache/
+/reports/**/policy_parts/
+/reports/**/*.parquet
+/reports/**/legacy_artifacts/
+/reports/**/episode_lineage_seed_*.json
+/reports/**/logs/
+/reports/**/*.log
+/reports/**/*.pid
+
+# ZCU106: retain README, runtime, tools, manifest, trace, NPZ and XModel.
+# Raw input and host-only payloads remain on disk for SD copy/preparation.
+/root/videos/
+/root/models/yolov5n/offline_yolov5n.pt
+/root/tools/offline_encoder_host
+/root/vendor/
+
+# Publish result summaries/comparison tables without encoded/reference video.
+/root/results/**
+!/root/results/**/
+!/root/results/**/*.md
+!/root/results/**/comparison/*.csv
+!/root/results/**/comparison/report.json

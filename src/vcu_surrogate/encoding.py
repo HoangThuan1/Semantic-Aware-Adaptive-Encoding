@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from .dataset import dataset_hash
 from .common import ROOT, project_path, run, sha256, stable_hash, write_json
 from .video import count_frames
 
@@ -23,6 +24,7 @@ def _encode_one(video, roi_path: Path, roi_hash: str, video_dir: Path,
     output = video_dir / f"action_{current_action:02d}_b{bitrate_mbps:g}_q{delta_label}.mp4"
     sidecar = output.with_suffix(".json")
     job = {
+        "dataset_sha256": dataset_hash(config),
         "video_id": video.video_id, "reference_sha256": video.reference_sha256,
         "roi_sha256": roi_hash, "action_id": current_action,
         "bitrate_mbps": float(bitrate_mbps), "delta_qp": int(delta_qp),
@@ -30,12 +32,16 @@ def _encode_one(video, roi_path: Path, roi_hash: str, video_dir: Path,
     }
     job_hash = stable_hash(job)
     complete = False
+    output_hash = None
     if output.is_file() and sidecar.is_file():
         existing = json.loads(sidecar.read_text())
         if existing.get("job_hash") != job_hash:
             raise RuntimeError(f"incompatible existing encode: {output}")
-        if count_frames(output) != video.frame_count:
-            raise RuntimeError(f"existing encode has wrong frame count: {output}")
+        output_hash = sha256(output)
+        if output_hash != existing.get("output_sha256"):
+            raise RuntimeError(f"existing encode checksum mismatch: {output}")
+        # The sidecar is written only after checking every frame. An unchanged
+        # bitstream and matching job preserve that check without decoding again.
         complete = True
     if not complete:
         output.unlink(missing_ok=True)
@@ -51,23 +57,28 @@ def _encode_one(video, roi_path: Path, roi_hash: str, video_dir: Path,
             temporary.unlink(missing_ok=True)
             raise RuntimeError(f"encoded frame mismatch: {actual_frames} != {video.frame_count}")
         temporary.replace(output)
-        write_json(sidecar, {**job, "job_hash": job_hash, "output_sha256": sha256(output)})
+        output_hash = sha256(output)
+        write_json(sidecar, {**job, "job_hash": job_hash, "output_sha256": output_hash})
     return {
         "video_id": video.video_id, "action_id": current_action,
         "bitrate_index": bitrate_index, "roi_index": roi_index,
         "target_bitrate_mbps": float(bitrate_mbps), "delta_qp_roi": int(delta_qp),
         "encoded_path": str(output.relative_to(ROOT)), "frame_count": video.frame_count,
-        "gop_count": video.gop_count, "encoded_sha256": sha256(output),
+        "gop_count": video.gop_count, "encoded_sha256": output_hash,
     }
 
 
-def encode_grid(config: dict) -> None:
+def encode_grid(config: dict, video_ids: list[str] | None = None) -> pd.DataFrame:
     artifacts = project_path(config, "artifacts")
     reference_manifest_path = artifacts / "reference" / "manifest.parquet"
     semantics_path = artifacts / "metadata" / "gop_semantics.parquet"
     if not reference_manifest_path.is_file() or not semantics_path.is_file():
         raise RuntimeError("reference or metadata missing; run normalize and infer first")
     reference_manifest = pd.read_parquet(reference_manifest_path)
+    if video_ids is not None:
+        reference_manifest = reference_manifest[reference_manifest.video_id.isin(video_ids)]
+        if len(video_ids) != 1 or set(reference_manifest.video_id) != set(video_ids):
+            raise RuntimeError("compact encode requires exactly one known video")
     encoder = config["encoder"]
     bitrates = encoder["bitrates_mbps"]
     deltas = encoder["roi_delta_qp"]
@@ -101,6 +112,9 @@ def encode_grid(config: dict) -> None:
                        for roi_index, delta_qp in enumerate(deltas)]
             for future in as_completed(futures):
                 rows.append(future.result())
-    pd.DataFrame(rows).sort_values(["video_id", "action_id"]).to_parquet(
-        output_root / "manifest.parquet", index=False
-    )
+    result = pd.DataFrame(rows).sort_values(["video_id", "action_id"])
+    destination = output_root / "manifest.parquet"
+    if video_ids is not None:
+        destination = output_root / video_ids[0] / "manifest.parquet"
+    result.to_parquet(destination, index=False)
+    return result

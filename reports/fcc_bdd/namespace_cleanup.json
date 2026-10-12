@@ -1,0 +1,262 @@
+{
+  "canonical_namespace": "fcc_bdd",
+  "latest_cleanup": {
+    "current_encodes_retained": true,
+    "reference_bytes_removed": 37264256165,
+    "reference_videos_removed": 56,
+    "runner_status": "paused",
+    "verified_benchmark_actions": 1792,
+    "verified_metric_actions": 1792,
+    "other_removed": [
+      {
+        "path": "artifacts/smoke",
+        "bytes": 157947884
+      },
+      {
+        "path": "artifacts/rl/ddqn_seed_13.previous_reward.pt",
+        "bytes": 371690
+      },
+      {
+        "path": "reports/rl",
+        "bytes": 12664579
+      },
+      {
+        "path": "reports/validation_report.json",
+        "bytes": 270
+      },
+      {
+        "path": "reports/fcc_bdd/logs/train.previous_reward.log",
+        "bytes": 480
+      },
+      {
+        "path": "data/raw/mahimahi",
+        "bytes": 45659313
+      },
+      {
+        "path": ".pytest_cache",
+        "bytes": 15503
+      },
+      {
+        "path": "data/processed/action_schedules.parquet",
+        "bytes": 6519
+      },
+      {
+        "path": "data/processed/transitions.parquet",
+        "bytes": 280066
+      },
+      {
+        "path": "data/processed/trace_catalog.parquet",
+        "bytes": 8265
+      },
+      {
+        "path": "data/processed/bandwidth_traces.parquet",
+        "bytes": 43832
+      },
+      {
+        "path": "data/processed/transition_schema.json",
+        "bytes": 765
+      },
+      {
+        "path": "reports/benchmark_tests_final.log",
+        "bytes": 80
+      },
+      {
+        "path": "reports/benchmark_native_tests.log",
+        "bytes": 345
+      },
+      {
+        "path": "reports/benchmark_native_build.log",
+        "bytes": 5506
+      },
+      {
+        "path": "reports/benchmark_tests_after_fix.log",
+        "bytes": 80
+      },
+      {
+        "path": "reports/benchmark_tests.log",
+        "bytes": 80
+      },
+      {
+        "path": "reports/benchmark_run.log",
+        "bytes": 10443
+      },
+      {
+        "path": "reports/benchmark/rd_detection_recall.png",
+        "bytes": 205298
+      },
+      {
+        "path": "reports/benchmark/policy_episodes.parquet",
+        "bytes": 979878
+      },
+      {
+        "path": "reports/benchmark/rd_vmaf.png",
+        "bytes": 169421
+      },
+      {
+        "path": "reports/benchmark/manifest.json",
+        "bytes": 2643
+      },
+      {
+        "path": "reports/benchmark/grid_enriched.parquet",
+        "bytes": 1781719
+      },
+      {
+        "path": "reports/benchmark/baseline_selection.json",
+        "bytes": 266
+      },
+      {
+        "path": "reports/benchmark/policy_summary.csv",
+        "bytes": 109628
+      },
+      {
+        "path": "reports/benchmark/rd_semantic_retention.png",
+        "bytes": 201235
+      },
+      {
+        "path": "reports/benchmark/validation_candidates.csv",
+        "bytes": 3128
+      },
+      {
+        "path": "reports/benchmark/frame_samples.parquet",
+        "bytes": 2552271
+      },
+      {
+        "path": "reports/benchmark/rate_distortion.csv",
+        "bytes": 39907
+      },
+      {
+        "path": "reports/benchmark/rd_roi_ssim.png",
+        "bytes": 205694
+      },
+      {
+        "path": "reports/benchmark/verification.json",
+        "bytes": 744
+      },
+      {
+        "path": "reports/benchmark/paired_policy_comparisons.csv",
+        "bytes": 48649
+      },
+      {
+        "path": "reports/benchmark/legacy_artifacts/metadata",
+        "bytes": 7428431
+      },
+      {
+        "path": "reports/benchmark/legacy_artifacts/encodes",
+        "bytes": 188169
+      },
+      {
+        "path": "reports/benchmark/legacy_artifacts/rl/ddqn_seed_13.pt",
+        "bytes": 371242
+      },
+      {
+        "path": "reports/benchmark/legacy_artifacts/rl/ddqn_seed_29.pt",
+        "bytes": 371242
+      },
+      {
+        "path": "reports/benchmark/legacy_artifacts/rl/ddqn_seed_13.npz",
+        "bytes": 91010
+      },
+      {
+        "path": "reports/benchmark/legacy_artifacts/rl/ddqn_seed_47.npz",
+        "bytes": 91010
+      },
+      {
+        "path": "reports/benchmark/legacy_artifacts/rl/ddqn_seed_47.pt",
+        "bytes": 371178
+      },
+      {
+        "path": "reports/benchmark/legacy_artifacts/rl/ddqn_seed_29.npz",
+        "bytes": 91010
+      },
+      {
+        "path": "reports/benchmark/legacy_artifacts/policy_videos",
+        "bytes": 121486814
+      },
+      {
+        "path": "reports/benchmark/legacy_artifacts/metrics",
+        "bytes": 213245997
+      },
+      {
+        "path": "reports/benchmark/legacy_artifacts/reference",
+        "bytes": 12200
+      },
+      {
+        "path": "reports/benchmark/roi_vs_nonroi_paired.parquet",
+        "bytes": 590811
+      },
+      {
+        "path": "reports/benchmark/policy_comparison.png",
+        "bytes": 86752
+      },
+      {
+        "path": "reports/benchmark/semantic_by_class.csv",
+        "bytes": 164367
+      },
+      {
+        "path": "reports/benchmark/matched_quality_savings.csv",
+        "bytes": 13917
+      },
+      {
+        "path": "reports/benchmark/rd_nonroi_ssim_y.png",
+        "bytes": 216354
+      },
+      {
+        "path": "reports/benchmark/policy_rollouts.parquet",
+        "bytes": 19951186
+      },
+      {
+        "path": "reports/benchmark/rate_distortion.parquet",
+        "bytes": 29430
+      },
+      {
+        "path": "reports/benchmark/cache_migration",
+        "bytes": 60629
+      },
+      {
+        "path": "reports/benchmark/semantic_class_samples.parquet",
+        "bytes": 1481971
+      },
+      {
+        "path": "reports/benchmark/REPORT.md",
+        "bytes": 4342
+      },
+      {
+        "path": "reports/benchmark/cache",
+        "bytes": 10137155
+      },
+      {
+        "path": "src/vcu_surrogate/__pycache__",
+        "bytes": 345739
+      },
+      {
+        "path": "scripts/__pycache__",
+        "bytes": 44197
+      },
+      {
+        "path": "tests/__pycache__",
+        "bytes": 264017
+      },
+      {
+        "path": "root/tools/__pycache__",
+        "bytes": 60499
+      },
+      {
+        "path": "root/rl_runtime/__pycache__",
+        "bytes": 75082
+      }
+    ],
+    "other_bytes_removed": 600590932,
+    "total_bytes_removed": 37864847097,
+    "retained_board_bundle_dependency": "reports/benchmark/legacy_artifacts/rl/ddqn_selected.npz",
+    "post_cleanup_benchmark_cache_smoke": {
+      "status": "passed",
+      "video_id": "bdd_114af10f-c3d93b85",
+      "cached_actions": 32,
+      "sample_rows": 3840,
+      "reference_file_absent": true
+    }
+  },
+  "removed_incomplete_bytes": 15729024,
+  "retained_bdd_videos": 51,
+  "retained_original_dashcam_metrics": true
+}

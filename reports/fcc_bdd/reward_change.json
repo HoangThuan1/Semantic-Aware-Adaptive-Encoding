@@ -1,0 +1,39 @@
+{
+  "benchmark_measurement_caches_reused": 1792,
+  "config_sha256": "cbc5cc0e70d670feab74c25a4e337b32e9f66ff2696fb5df14e196306472d520",
+  "previous_config_sha256": "c64c984af96b15b156bd43748790a447a6d14d7383fbc7f88c6dd12cfaceebeb",
+  "previous_reward": {
+    "action_switch": 0.05,
+    "bandwidth_epsilon_mbps": 0.05,
+    "bandwidth_utilization": 0.05,
+    "bandwidth_violation": 0.2,
+    "full_vmaf": 0.45,
+    "penalty_cap": 4.0,
+    "roi_ssim": 0.25
+  },
+  "reuse_basis": "Only reward weights changed; benchmark code, video hashes, detections, sampling, and all cache output checksums verified unchanged.",
+  "reward": {
+    "action_switch": 0.0,
+    "bandwidth_epsilon_mbps": 0.05,
+    "bandwidth_utilization": 0.0,
+    "bandwidth_violation": 0.3,
+    "full_vmaf": 0.45,
+    "penalty_cap": 4.0,
+    "roi_ssim": 0.25
+  },
+  "seed_selection": {
+    "benchmark_measurement_caches_reused": 1792,
+    "checkpoint_config_rebound_after_seed_completion": true,
+    "config_sha256": "7500955b17b16e58972dfed46718216b3a9c4a710a882b29564517bba0d748a5",
+    "previous_config_sha256": "cbc5cc0e70d670feab74c25a4e337b32e9f66ff2696fb5df14e196306472d520",
+    "previous_seeds": [
+      13,
+      29,
+      47
+    ],
+    "seeds": [
+      13
+    ],
+    "steps_per_seed": 300000
+  }
+}

@@ -1,10 +1,10 @@
 paths:
   videos: videos
   models: models
-  raw_data: data/raw
-  processed_data: data/processed
+  raw_data: data/raw/fcc_bdd
+  processed_data: data/processed/fcc_bdd
   artifacts: artifacts
-  reports: reports
+  reports: reports/fcc_bdd
 
 video:
   width: 1920
@@ -56,19 +56,20 @@ encoder:
 reward:
   full_vmaf: 0.45
   roi_ssim: 0.25
-  bandwidth_violation: 0.20
-  bandwidth_utilization: 0.05
+  bandwidth_violation: 1.0
+  bandwidth_penalty_shape: linear_shoulder
+  bandwidth_utilization: 0.0
   action_switch: 0.05
   bandwidth_epsilon_mbps: 0.05
   penalty_cap: 4.0
 
 traces:
-  mahimahi_commit: f1346c38c415abfc98626dd82450f49a57033603
-  mahimahi_url: https://github.com/ravinet/mahimahi.git
+  url: https://github.com/confiwent/Real-world-bandwidth-traces.git
+  commit: d28c4fd48d0e358db024cc0217b111c070815fa7
   split_seed: 20260923
 
 rl:
-  seeds: [13, 29, 47]
+  seeds: [13]
   steps_per_seed: 300000
   validation_interval: 5000
   replay_capacity: 100000
@@ -81,3 +82,15 @@ rl:
   epsilon_final: 0.05
   state_clip: 10.0
   synthetic_block_seconds: 10
+
+dataset:
+  bdd_revision: 2e48a0340eb591fa1918f3375d55601a7f0bbab3
+  target_bytes: 1000000000
+  max_bytes: 3000000000
+
+metrics:
+  sample_stride: 5
+  sample_offset: 0
+  cpu_workers: 6
+  cuda_workers: 0
+  vmaf_cuda_commit: 17a67b238ce0539bdeafdc95961abac64fa16ea8

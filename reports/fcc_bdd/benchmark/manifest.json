@@ -1,0 +1,71 @@
+{
+  "batch_size": 8,
+  "benchmark_version": 1,
+  "bootstrap_replicates": 2000,
+  "bootstrap_seed": 20261004,
+  "code_sha256": {
+    "src/vcu_surrogate/benchmark.py": "442eefcde09dddf636f34c00bdf4b10b42b8e51276b175041dc44a09b92e100e",
+    "src/vcu_surrogate/benchmark_metrics.py": "62d00e8722a2dca8c59b7b567369d8f39a55d4cf9cdc39e4163a82cdad730572",
+    "src/vcu_surrogate/policy_numpy.py": "3f22ede9e2e4044ad2c64a698a30451d3b553860992d896769603f20b660f3e0",
+    "src/vcu_surrogate/rl_env.py": "47c24f49e3ab4478f4a5fd6ba5998f099a2dc8325ccb4a439b9dc9000d6ffaf7"
+  },
+  "coverage": {
+    "frame_offsets": [
+      0,
+      14,
+      29
+    ],
+    "gops": 2314,
+    "grid_rows": 74048,
+    "metric_sample_stride": 5,
+    "reward": {
+      "action_switch": 0.05,
+      "bandwidth_epsilon_mbps": 0.05,
+      "bandwidth_penalty_shape": "linear_shoulder",
+      "bandwidth_utilization": 0.0,
+      "bandwidth_violation": 1.0,
+      "full_vmaf": 0.45,
+      "penalty_cap": 4.0,
+      "roi_ssim": 0.25
+    },
+    "sample_frames": 222144,
+    "videos": 56
+  },
+  "elapsed_s": 792.2056179579995,
+  "frames_per_gop": 3,
+  "gpu": "Quadro T1000",
+  "input_sha256": {
+    "artifacts/encodes/manifest.parquet": "8e38bc5fb4afb5b9011272f72b5b2e7a8d2d01059c77a5b7b617f2d53d1a26ef",
+    "artifacts/metadata/detections.parquet": "d0799457d92d06082f7c09846e56bba3721a62b818077a5f568de16578cd8ddd",
+    "artifacts/metadata/gop_semantics.parquet": "3c434f573bd78b59b66c634b8795a28551d62a417dffa0cca7880ecb408a67bc",
+    "artifacts/metrics/gop_action_grid.parquet": "72d86179a37468d3919ede058bf450acbab40fcc07dcbaf3863d2b35c4a259ed",
+    "artifacts/reference/manifest.parquet": "b88bed286680d44a7aa3c8c9848f479b0644ac45e27e839142912ea702178056",
+    "artifacts/rl/ddqn_seed_13.npz": "bd14aa62a7e6630526c0a8f26a183361c3769cfdd8d2e242000bbd635243dcf0",
+    "artifacts/rl/ddqn_selected.npz": "bd14aa62a7e6630526c0a8f26a183361c3769cfdd8d2e242000bbd635243dcf0",
+    "config/pipeline.yaml": "4fb5742916672083480e6ab655cc9d9c41e782ace2880f87b6dd671ba3ab6f5c",
+    "data/processed/fcc_bdd/bandwidth_traces.parquet": "1810b86c8c9a261ef6af2caa17fe7f2f64a624cf83480d1a24f3365972ac83f2",
+    "data/processed/fcc_bdd/trace_catalog.parquet": "885511ce63ec82db642da2063df5ad86c0b825e12e59fb6bc146aba810d12cc4",
+    "models/yolov5n.pt": "4f180cf23ba0717ada0badd6c685026d73d48f184d00fc159c2641284b2ac0a3",
+    "reports/fcc_bdd/rl/training_summary.json": "ba2dca4b0031bdf0464a87279e3bdde7f6c100db4abe09e39a78a17979108076"
+  },
+  "limits": [
+    "sampled extra frame metrics",
+    "reference detector pseudo labels",
+    "subset of BDD100K",
+    "fixed-action encode surrogate",
+    "fluid queue simulation; no real network/VCU measurement"
+  ],
+  "python": "3.10.14",
+  "reward_config": {
+    "action_switch": 0.05,
+    "bandwidth_epsilon_mbps": 0.05,
+    "bandwidth_penalty_shape": "linear_shoulder",
+    "bandwidth_utilization": 0.0,
+    "bandwidth_violation": 1.0,
+    "full_vmaf": 0.45,
+    "penalty_cap": 4.0,
+    "roi_ssim": 0.25
+  },
+  "status": "complete",
+  "torch": "2.2.2"
+}

@@ -4,11 +4,33 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from vcu_surrogate.rl_env import GridDataset, Normalizer, OfflineGOPEnv
+from vcu_surrogate.rl_env import GridDataset, Normalizer, OfflineGOPEnv, reward_for
+
+
+def test_configured_quality_linear_shoulder_violation_and_switch_reward():
+    from vcu_surrogate.common import load_config
+    config = load_config()["reward"]
+    assert config["bandwidth_violation"] == 1.
+    assert config["bandwidth_penalty_shape"] == 'linear_shoulder'
+    assert config["bandwidth_utilization"] == 0
+    assert config["action_switch"] == .05
+    row = pd.Series(dict(actual_bitrate_mbps=2., vmaf=80., roi_ssim=.9,
+                         roi_frame_count=1, bitrate_index=7, roi_index=3))
+    previous = row.copy()
+    previous["bitrate_index"], previous["roi_index"] = 0, 0
+    assert reward_for(row, 1., previous, config)["reward"] == pytest.approx(-.715)
+    assert reward_for(row, 1., row, config)["reward"] == pytest.approx(-.665)
+    assert reward_for(row, 2., previous, config)["reward"] == pytest.approx(.535)
+    assert reward_for(row, 10., previous, config)["reward"] == pytest.approx(.535)
+    assert reward_for(row, 2./1.2, previous, config)["reward"] == pytest.approx(.335)
+    assert reward_for(row, 0., previous, config)["reward"] == pytest.approx(-3.465)
+    row["roi_frame_count"], row["roi_ssim"] = 0, np.nan
+    assert reward_for(row, 2., previous, config)["reward"] == pytest.approx(.31)
 
 
 class TinyGrid:
     action_count = 32
+    video_by_split = {"train": ["clip"]}
     semantic_by_video = {"clip": np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])}
     trace_by_split = {"train": {"trace": np.array([0., 1., 2., 3., 4., 5.])}}
     reward_config = {"bandwidth_epsilon_mbps": 0.05, "penalty_cap": 4.0,
@@ -54,12 +76,16 @@ def test_normalizer_and_synthetic_use_only_training_bandwidth() -> None:
         "validation": {"held_out": np.full(40, 100.)},
         "test": {"verizon": np.full(40, 1000.)},
     }
-    dataset.grid = pd.DataFrame({"actual_bitrate_mbps": [1., 2., 3.]})
-    dataset.semantics = pd.DataFrame({"semantic_score": [0.1, 0.5, 0.9]})
+    dataset.video_by_split = {"train": ["clip"]}
+    dataset.trace_source = {"att": "fcc", "tmobile": "norway"}
+    dataset.grid = pd.DataFrame({"video_id": ["clip"] * 3 + ["test"], "actual_bitrate_mbps": [1., 2., 3., 1000.]})
+    dataset.semantics = pd.DataFrame({"video_id": ["clip"] * 3 + ["test"], "semantic_score": [0.1, 0.5, 0.9, 1.]})
     dataset.state_clip = 10.0
     dataset.block_seconds = 10
     normalizer = dataset.normalizer()
     assert normalizer.mean[0] == 20.5
+    assert normalizer.mean[4] == 2.0
+    assert normalizer.mean[5] == .5
     trace, lineage = dataset.synthetic(25, np.random.default_rng(13))
     assert len(trace) == 25 and len(lineage) == 3
     assert {item["trace_id"] for item in lineage} <= {"att", "tmobile"}

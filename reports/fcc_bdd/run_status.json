@@ -1,0 +1,47 @@
+{
+  "completed_stages": [
+    "reward-cache-reuse",
+    "clear-previous-outputs",
+    "tests",
+    "preflight",
+    "transitions",
+    "validate",
+    "train",
+    "evaluate",
+    "benchmark"
+  ],
+  "config_sha256": "4fb5742916672083480e6ab655cc9d9c41e782ace2880f87b6dd671ba3ab6f5c",
+  "dataset": {
+    "bdd_bytes": 1005761671,
+    "bdd_videos": 51,
+    "dataset_sha256": "28fbfdd759c2ea76bb6bf6d97f113502f9f153856f7429e21b238a372247adb5",
+    "traces_by_source_split": {
+      "fcc/test": 9,
+      "fcc/train": 41,
+      "fcc/validation": 9,
+      "norway/test": 11,
+      "norway/train": 47,
+      "norway/validation": 10
+    },
+    "video_count": 56,
+    "video_splits": {
+      "test": 17,
+      "train": 35,
+      "validation": 4
+    }
+  },
+  "reward": {
+    "action_switch": 0.05,
+    "bandwidth_epsilon_mbps": 0.05,
+    "bandwidth_penalty_shape": "linear_shoulder",
+    "bandwidth_utilization": 0.0,
+    "bandwidth_violation": 1.0,
+    "full_vmaf": 0.45,
+    "penalty_cap": 4.0,
+    "roi_ssim": 0.25
+  },
+  "stage": "complete",
+  "started_at_utc": "2026-10-07T17:40:35.127720+00:00",
+  "status": "complete",
+  "updated_at_utc": "2026-10-07T19:54:09.912019+00:00"
+}

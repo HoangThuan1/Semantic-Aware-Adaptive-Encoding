@@ -1,0 +1,10 @@
+{
+  "seeds": [
+    {
+      "best_validation_mean_return": 3.898130342417688,
+      "checkpoint": "/workspace/artifacts/rl/ddqn_seed_13.pt",
+      "seed": 13
+    }
+  ],
+  "selected_seed": 13
+}

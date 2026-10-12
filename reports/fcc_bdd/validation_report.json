@@ -1,0 +1,14 @@
+{
+  "actions": 32,
+  "cuda_device": "Quadro T1000",
+  "detector": "yolov5n",
+  "detector_weights": "models/yolov5n.pt",
+  "encode_structure_validation": "reused_after_sha256_verification",
+  "gops": 2314,
+  "grid_rows": 74048,
+  "reference_frames": 69420,
+  "status": "passed",
+  "trace_count": 127,
+  "transition_count": 133724,
+  "videos": 56
+}

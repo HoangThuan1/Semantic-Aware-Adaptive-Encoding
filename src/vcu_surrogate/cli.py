@@ -46,10 +46,10 @@ def main() -> None:
         "export-policy": lambda: export_policy(config),
         "render-policy": lambda: render_policy_videos(config),
         "test": lambda: subprocess.run(["python", "-m", "pytest", "tests"], check=True),
-        "benchmark": lambda: run_benchmark(config, args.frames_per_gop, args.batch_size),
+        "benchmark": lambda: run_benchmark(config, getattr(args, "frames_per_gop", 3), getattr(args, "batch_size", 8)),
     }
     if args.command == "all":
-        for name in ("preflight", "download", "normalize", "infer", "encode-grid", "metrics", "traces", "transitions", "validate", "train", "evaluate", "render-policy"):
+        for name in ("preflight", "download", "normalize", "infer", "encode-grid", "metrics", "traces", "transitions", "validate", "train", "evaluate", "export-policy", "render-policy", "benchmark"):
             commands[name]()
     else:
         commands[args.command]()

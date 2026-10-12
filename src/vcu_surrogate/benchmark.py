@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import json
 import inspect
-from concurrent.futures import ThreadPoolExecutor
+import logging
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 import math
+import multiprocessing
+import os
 import platform
 import time
 from pathlib import Path
@@ -17,13 +20,42 @@ from .benchmark_metrics import (box_mask, detection_match, fluid_queue, frame_of
 from .common import ROOT, project_path, sha256, stable_hash, write_json
 from .inference import _load_model
 from .policy_numpy import NumpyPolicy
-from .rl_env import GridDataset, WARMUP_ACTION, WARMUP_GOPS, reward_for
+from .rl_env import GridDataset, WARMUP_ACTION, WARMUP_GOPS, bandwidth_penalty, reward_for
 
 VERSION = 1
 COUNT_COLUMNS = ["reference_count", "predicted_count", "matched_count", "extra_count", "missed_count",
                  "match_iou_sum", "confidence_delta_sum", "confidence_ratio_sum",
                  "reference_mass", "retained_mass"]
 QUALITY_COLUMNS = ["roi_psnr_y", "nonroi_psnr_y", "roi_ssim_y", "nonroi_ssim_y", "semantic_score_abs_error"]
+
+
+def _predict_complete(model, images, size, logger=None):
+    """Retry a timed-out YOLO batch as single images; NMS cannot skip another image."""
+    if logger is None:
+        from utils.general import LOGGER
+        logger = LOGGER
+    timed_out = [False]
+    class Capture(logging.Handler):
+        def emit(self, record):
+            if "NMS time limit" in record.getMessage():
+                timed_out[0] = True
+    handler = Capture()
+    logger.addHandler(handler)
+    try:
+        predictions = model(images, size=size).xyxy
+    finally:
+        logger.removeHandler(handler)
+    if len(predictions) != len(images):
+        raise RuntimeError("YOLO batch does not cover every input image")
+    if not timed_out[0]:
+        return predictions, False
+    complete = []
+    for image in images:
+        single = model([image], size=size).xyxy
+        if len(single) != 1:
+            raise RuntimeError("YOLO single-image retry coverage mismatch")
+        complete.append(single[0])
+    return complete, True
 
 
 def _save_table(path: Path, frame: pd.DataFrame) -> None:
@@ -54,7 +86,9 @@ def _sample_video(path: Path, expected_frames: int, offsets: np.ndarray):
         cap.release()
 
 
-def measure_grid(config: dict, output: Path, frames_per_gop: int, batch_size: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+def measure_grid(config: dict, output: Path, frames_per_gop: int, batch_size: int,
+                 video_ids: list[str] | None = None,
+                 encode_manifest: Path | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     import cv2
     import torch
     from .assets import assert_downloads
@@ -66,10 +100,15 @@ def measure_grid(config: dict, output: Path, frames_per_gop: int, batch_size: in
     offsets = frame_offsets(frames_per_gop)
     artifacts = project_path(config, "artifacts")
     refs = pd.read_parquet(artifacts / "reference/manifest.parquet")
-    encodes = pd.read_parquet(artifacts / "encodes/manifest.parquet")
+    encodes = pd.read_parquet(encode_manifest or artifacts / "encodes/manifest.parquet")
+    if video_ids is not None:
+        refs = refs[refs.video_id.isin(video_ids)]
+        encodes = encodes[encodes.video_id.isin(video_ids)]
+        if set(refs.video_id) != set(video_ids) or set(encodes.video_id) != set(video_ids):
+            raise RuntimeError("unknown video in compact benchmark request")
     detections_path = artifacts / "metadata/detections.parquet"
     detections = pd.read_parquet(detections_path)
-    source_hash = stable_hash({"implementation": stable_hash([inspect.getsource(measure_grid), inspect.getsource(_sample_video), inspect.getsource(_save_table), COUNT_COLUMNS]),
+    source_hash = stable_hash({"implementation": stable_hash([inspect.getsource(measure_grid), inspect.getsource(_sample_video), inspect.getsource(_save_table), inspect.getsource(_predict_complete), COUNT_COLUMNS]),
                               "inference_implementation": sha256(Path(__file__).with_name("inference.py")),
                               "metrics_implementation": sha256(Path(__file__).with_name("benchmark_metrics.py")),
                               "detections_sha256": sha256(detections_path), "config": config["_config_sha256"],
@@ -82,8 +121,6 @@ def measure_grid(config: dict, output: Path, frames_per_gop: int, batch_size: in
     for reference in refs.sort_values("video_id").itertuples(index=False):
         video_id = str(reference.video_id)
         reference_path = ROOT / reference.reference_path
-        if sha256(reference_path) != reference.reference_sha256:
-            raise RuntimeError(f"reference hash mismatch: {video_id}")
         # Mmap is bounded in resident memory and avoids decoding FFV1 32 times.
         ref_cache = output / "cache" / f"{video_id}.reference.npy"
         ref_cache.parent.mkdir(parents=True, exist_ok=True)
@@ -119,6 +156,8 @@ def measure_grid(config: dict, output: Path, frames_per_gop: int, batch_size: in
                 class_weights = {idx: float(config["yolo"]["classes"][name]) for idx, name in names.items()
                                  if name in config["yolo"]["classes"]}
             if cached_reference is None:
+                if sha256(reference_path) != reference.reference_sha256:
+                    raise RuntimeError(f"reference hash mismatch: {video_id}")
                 n = int(reference.gop_count)*len(offsets)
                 cached_reference = np.lib.format.open_memmap(ref_cache, mode="w+", dtype=np.uint8,
                                                              shape=(n, 1080, 1920, 3))
@@ -126,13 +165,16 @@ def measure_grid(config: dict, output: Path, frames_per_gop: int, batch_size: in
                     cached_reference[j] = frame
                 cached_reference.flush()
             rows, class_rows, pending = [], [], []
+            nms_retry_batches = 0
             started = time.monotonic()
 
             def process(batch):
+                nonlocal nms_retry_batches
                 indices, images = zip(*batch)
                 with torch.inference_mode():
-                    predictions = model([cv2.cvtColor(im, cv2.COLOR_BGR2RGB) for im in images],
-                                        size=config["yolo"]["image_size"]).xyxy
+                    predictions, retried = _predict_complete(model,
+                        [cv2.cvtColor(im, cv2.COLOR_BGR2RGB) for im in images], config["yolo"]["image_size"])
+                    nms_retry_batches += int(retried)
                 quality_jobs = []
                 for (sample_idx, frame_idx), image in zip(indices, images):
                     ref_boxes = by_frame.get(frame_idx, np.empty((0, 6)))
@@ -173,6 +215,7 @@ def measure_grid(config: dict, output: Path, frames_per_gop: int, batch_size: in
             _save_table(classes_path, classes)
             write_json(sidecar, {"job_hash": job_hash, "output_sha256": sha256(destination),
                                  "classes_sha256": sha256(classes_path), "sample_frames": len(frame),
+                                 "complete_batch_inference": True, "nms_timeout_retry_batches": nms_retry_batches,
                                  "elapsed_s": time.monotonic()-started})
             samples.append(frame)
             class_parts.append(classes)
@@ -236,19 +279,61 @@ def rate_distortion(grid: pd.DataFrame, output: Path) -> pd.DataFrame:
     return curves
 
 
-def causal_action(history: np.ndarray, semantics: float, bitrates: np.ndarray, safety: float,
-                  estimator: str, roi_mode: int | str) -> int:
-    history = np.asarray(history, dtype=float)
-    if estimator == "last":
-        estimate = history[-1]
-    elif estimator == "harmonic":
-        estimate = 0.0 if np.any(history <= 0) else len(history)/np.sum(1/history)
-    else:
-        raise ValueError(f"unknown estimator: {estimator}")
-    feasible = np.flatnonzero(bitrates <= safety*estimate)
-    bitrate_index = int(feasible[-1]) if len(feasible) else 0
-    roi_index = int(semantics >= 0.25) + int(semantics >= 0.5) + int(semantics >= 0.75) if roi_mode == "semantic" else int(roi_mode)
-    return bitrate_index*4 + roi_index
+def vbr_action(semantics, bitrates: np.ndarray, base_mbps: float, gain: float,
+               roi_mode: int | str):
+    """Content-based VBR proxy; no bandwidth feedback or constant-quality encode."""
+    semantics = np.asarray(semantics, dtype=float)
+    desired = base_mbps * (1 + gain * (2 * semantics - 1))
+    bitrate_index = np.abs(desired[..., None] - bitrates).argmin(axis=-1)
+    roi_index = (np.sum(semantics[..., None] >= np.array([.25, .5, .75]), axis=-1)
+                 if roi_mode == "semantic" else int(roi_mode))
+    return bitrate_index * 4 + roi_index
+
+
+def fixed_roi_policy_action(policy: NumpyPolicy, state: np.ndarray, roi_index: int = 2) -> int:
+    """Choose the highest-Q bitrate among actions with the prespecified ROI delta."""
+    if roi_index not in range(4):
+        raise ValueError("ROI index must be in [0, 3]")
+    actions = np.arange(roi_index, 32, 4)
+    return int(actions[policy.q_values(state)[0, actions].argmax()])
+
+
+def baseline_validation_returns(dataset: GridDataset, grid: pd.DataFrame, specs: list[dict],
+                                *, cbr=None, vbr=None) -> np.ndarray:
+    """Score candidate baselines without queue/detection rollout; same reward as evaluation."""
+    bitrates = np.array([.5, 1, 1.5, 2, 3, 4, 6, 8])
+    config = dataset.reward_config
+    returns = []
+    for video in sorted({s['video_id'] for s in specs}):
+        semantic = dataset.semantic_by_video[video]
+        selected = [s for s in specs if s['video_id'] == video]
+        bw = np.stack([dataset.trace_by_split[s['split']][s['trace_id']]
+                       [s['trace_start']:s['trace_start'] + len(semantic)] for s in selected])
+        shape = (len(selected), len(semantic) - WARMUP_GOPS)
+        if cbr is not None:
+            actions = np.full(shape, cbr, dtype=int)
+        elif vbr is not None:
+            actions = np.broadcast_to(vbr_action(semantic[4:], bitrates, **vbr), shape)
+        else:
+            raise ValueError("candidate must specify CBR or VBR")
+        rows = grid[grid.video_id == video].sort_values(['gop_idx', 'action_id'])
+        def values(column):
+            table = rows[column].to_numpy().reshape(len(semantic), 32)
+            return table[np.arange(4, len(semantic))[None, :], actions]
+        actual = values('actual_bitrate_mbps')
+        if cbr is not None:
+            actual = np.maximum(actual, bitrates[int(cbr) // 4])
+        ratio = actual / np.maximum(bw[:, 4:], config['bandwidth_epsilon_mbps'])
+        previous = np.concatenate([np.full((shape[0], 1), WARMUP_ACTION), actions[:, :-1]], axis=1)
+        switch = .5 * (np.abs(actions // 4 - previous // 4) / 7
+                       + np.abs(actions % 4 - previous % 4) / 3)
+        roi_quality = np.where(values('roi_frame_count') > 0, values('roi_ssim'), 0)
+        reward = (config['full_vmaf'] * values('vmaf') / 100 + config['roi_ssim'] * roi_quality
+                  - config['bandwidth_violation'] * bandwidth_penalty(ratio, config)
+                  - config['bandwidth_utilization'] * np.minimum(ratio, config['penalty_cap'])
+                  - config['action_switch'] * switch)
+        returns.extend(reward.sum(axis=1))
+    return np.asarray(returns)
 
 
 def oracle_actions(outcomes: list[pd.DataFrame], bandwidth: np.ndarray, previous: pd.Series,
@@ -265,8 +350,16 @@ def oracle_actions(outcomes: list[pd.DataFrame], bandwidth: np.ndarray, previous
     value = np.zeros(32)
     choices = np.empty((n, 32), dtype=int)
     for k in range(n-1, -1, -1):
-        base = np.array([reward_for(outcomes[k].iloc[a], float(bandwidth[k]), outcomes[k].iloc[a], config)["reward"]
-                         for a in range(32)])
+        rows = outcomes[k]
+        ratio = rows.actual_bitrate_mbps.to_numpy(dtype=float) / max(
+            float(bandwidth[k]), float(config["bandwidth_epsilon_mbps"]))
+        cap = float(config["penalty_cap"])
+        roi = np.where(rows.roi_frame_count.to_numpy() > 0,
+                       rows.roi_ssim.to_numpy(dtype=float), 0.0)
+        base = (config["full_vmaf"] * rows.vmaf.to_numpy(dtype=float) / 100.0
+                + config["roi_ssim"] * roi
+                - config["bandwidth_violation"] * bandwidth_penalty(ratio, config)
+                - config["bandwidth_utilization"] * np.minimum(ratio, cap))
         candidates = base[None, :] - switch + value[None, :]
         choices[k] = candidates.argmax(axis=1)
         value = candidates.max(axis=1)
@@ -279,8 +372,9 @@ def oracle_actions(outcomes: list[pd.DataFrame], bandwidth: np.ndarray, previous
 
 
 def evaluate_strategy(dataset: GridDataset, enriched: pd.DataFrame, specs: list[dict], name: str,
-                      policy: NumpyPolicy | None = None, heuristic: dict | None = None,
-                      fixed: int | None = None, oracle: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
+                      policy: NumpyPolicy | None = None, oracle: bool = False,
+                      cbr: int | None = None, vbr: dict | None = None,
+                      fixed_roi: int | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     lookup = enriched.set_index(["video_id", "gop_idx", "action_id"])
     by_gop = {(str(v), int(k)): g.sort_values("action_id").reset_index(drop=True)
               for (v, k), g in enriched.groupby(["video_id", "gop_idx"])}
@@ -301,19 +395,27 @@ def evaluate_strategy(dataset: GridDataset, enriched: pd.DataFrame, specs: list[
         for k in range(4, len(semantic)):
             state = np.array([*bw[k-4:k], previous.actual_bitrate_mbps, semantic[k]])
             if policy is not None:
-                action = policy.act(state)[0]
+                action = (fixed_roi_policy_action(policy, state, fixed_roi)
+                          if fixed_roi is not None else policy.act(state)[0])
             elif exact is not None:
                 action = int(exact[k-4])
-            elif fixed is not None:
-                action = fixed
+            elif cbr is not None:
+                action = int(cbr)
+            elif vbr is not None:
+                action = int(vbr_action(semantic[k], bitrates, **vbr))
             else:
-                action = causal_action(bw[k-4:k], float(semantic[k]), bitrates, **heuristic)
+                raise ValueError("strategy must specify DDQN, CBR, VBR or oracle")
             row = lookup.loc[(video_id, k, action)]
+            padding = 0.0
+            if cbr is not None:
+                row = row.copy()
+                padding = max(0.0, float(row.target_bitrate_mbps) - float(row.actual_bitrate_mbps))
+                row['actual_bitrate_mbps'] += padding
             reward = reward_for(row, float(bw[k]), previous, dataset.reward_config)
             payloads.append(float(row.actual_bitrate_mbps))
             local.append({"strategy": name, "split": spec["split"], "video_id": video_id, "trace_id": trace_id,
                           "trace_start": offset, "gop_idx": k, "action_id": action,
-                          "bandwidth_mbps": float(bw[k]), **{c: row[c] for c in
+                          "bandwidth_mbps": float(bw[k]), "padding_mbps": padding, **{c: row[c] for c in
                           ["actual_bitrate_mbps", "target_bitrate_mbps", "delta_qp_roi", "vmaf", "roi_ssim", *QUALITY_COLUMNS,
                            *COUNT_COLUMNS]}, **reward})
             previous = row
@@ -361,35 +463,42 @@ def bootstrap_mean(values: np.ndarray, seed: int = 20261004) -> tuple[float, flo
     return tuple(float(v) for v in np.quantile(means, [.025, .975]))
 
 
-def summarize_policies(episodes: pd.DataFrame, rollouts: pd.DataFrame, output: Path) -> pd.DataFrame:
+def summarize_policies(episodes: pd.DataFrame, rollouts, output: Path) -> pd.DataFrame:
+    """Each streamed part contains complete split/strategy groups."""
+    from .parquet_stream import ParquetStream
     records = []
-    for (split, strategy), frame in rollouts.groupby(["split", "strategy"]):
-        ep = episodes[(episodes.split == split) & (episodes.strategy == strategy)]
-        record = {"split": split, "strategy": strategy, "episodes": len(ep), "gops": len(frame),
-                  "mean_return": float(ep["return"].mean()), "reward_per_gop": float(frame.reward.mean()),
-                  "vmaf": float(frame.vmaf.mean()), "roi_ssim": float(frame.roi_ssim.mean()),
-                  **{c: float(frame[c].mean()) for c in QUALITY_COLUMNS},
-                  "actual_bitrate_mbps": float(frame.actual_bitrate_mbps.mean()),
-                  "bandwidth_violation_rate": float(frame.bandwidth_violation.mean()),
-                  "action_switch_rate": float((frame.penalty_action_switch > 0).mean()),
-                  "deadline_miss_rate": float(frame.deadline_miss.mean()),
-                  "uncompleted_rate": float(frame.uncompleted.mean()),
-                  "p95_completed_latency_s": float(frame.completion_latency_s.quantile(.95)),
-                  "mean_backlog_mbit": float(frame.backlog_mbit.mean()),
-                  "excess_mbit_total": float(frame.excess_mbit.sum()),
-                  "delivered_throughput_mbps": float(frame.served_mbit.mean()),
-                  "unused_capacity_mbit_total": float(frame.unused_capacity_mbit.sum()),
-                  "capacity_utilization_fraction": float(frame.served_mbit.sum()/frame.bandwidth_mbps.sum()) if frame.bandwidth_mbps.sum() > 0 else np.nan,
-                  "post_drop_violation_rate": float(frame.loc[frame.post_drop, "bandwidth_violation"].mean())}
-        record.update({c: float(frame[c].sum()) for c in COUNT_COLUMNS})
-        # Cluster by video; same content and correlated trace windows make GOP iid CIs misleading.
-        video_means = ep.groupby("video_id")["reward_per_gop"].mean().to_numpy()
-        record["reward_video_bootstrap_low"], record["reward_video_bootstrap_high"] = bootstrap_mean(video_means)
-        records.append(record)
-    summary = semantic_rates(pd.DataFrame(records))
+    parts = [rollouts] if isinstance(rollouts, pd.DataFrame) else rollouts
+    with ParquetStream(output / "policy_rollouts.parquet") as writer:
+        for part in parts:
+            writer.append(part)
+            for (split, strategy), frame in part.groupby(["split", "strategy"]):
+                ep = episodes[(episodes.split == split) & (episodes.strategy == strategy)]
+                record = {"split": split, "strategy": strategy, "episodes": len(ep), "gops": len(frame),
+                          "mean_return": float(ep["return"].mean()), "reward_per_gop": float(frame.reward.mean()),
+                          "vmaf": float(frame.vmaf.mean()), "roi_ssim": float(frame.roi_ssim.mean()),
+                          **{c: float(frame[c].mean()) for c in QUALITY_COLUMNS},
+                          "actual_bitrate_mbps": float(frame.actual_bitrate_mbps.mean()),
+                          "mean_bandwidth_mbps": float(frame.bandwidth_mbps.mean()),
+                          "mean_padding_mbps": float(frame.padding_mbps.mean()) if "padding_mbps" in frame else 0.0,
+                          "bandwidth_violation_rate": float(frame.bandwidth_violation.mean()),
+                          "action_switch_rate": float((frame.penalty_action_switch > 0).mean()),
+                          "deadline_miss_rate": float(frame.deadline_miss.mean()),
+                          "uncompleted_rate": float(frame.uncompleted.mean()),
+                          "p95_completed_latency_s": float(frame.completion_latency_s.quantile(.95)),
+                          "mean_backlog_mbit": float(frame.backlog_mbit.mean()),
+                          "excess_mbit_total": float(frame.excess_mbit.sum()),
+                          "delivered_throughput_mbps": float(frame.served_mbit.mean()),
+                          "unused_capacity_mbit_total": float(frame.unused_capacity_mbit.sum()),
+                          "capacity_utilization_fraction": float(frame.served_mbit.sum()/frame.bandwidth_mbps.sum()) if frame.bandwidth_mbps.sum() > 0 else np.nan,
+                          "post_drop_violation_rate": float(frame.loc[frame.post_drop, "bandwidth_violation"].mean())}
+                record.update({c: float(frame[c].sum()) for c in COUNT_COLUMNS})
+                # Cluster by video; same content and correlated trace windows make GOP iid CIs misleading.
+                video_means = ep.groupby("video_id")["reward_per_gop"].mean().to_numpy()
+                record["reward_video_bootstrap_low"], record["reward_video_bootstrap_high"] = bootstrap_mean(video_means)
+                records.append(record)
+    summary = semantic_rates(pd.DataFrame(records).sort_values(["split", "strategy"]).reset_index(drop=True))
     summary.to_csv(output / "policy_summary.csv", index=False)
     _save_table(output / "policy_episodes.parquet", episodes)
-    _save_table(output / "policy_rollouts.parquet", rollouts)
     comparisons = []
     for split in ("test", "stress"):
         selected = episodes[(episodes.split == split) & (episodes.strategy == "ddqn_selected")]
@@ -412,7 +521,8 @@ def summarize_policies(episodes: pd.DataFrame, rollouts: pd.DataFrame, output: P
 
 def stress_specs(dataset: GridDataset) -> list[dict]:
     specs = []
-    for video_id, semantic in sorted(dataset.semantic_by_video.items()):
+    for video_id in dataset.video_by_split["test"]:
+        semantic = dataset.semantic_by_video[video_id]
         n = len(semantic)
         t = np.arange(n)
         # Diagnostics only: no tuning or selected-checkpoint decision on these traces.
@@ -425,80 +535,112 @@ def stress_specs(dataset: GridDataset) -> list[dict]:
     return specs
 
 
+def _evaluate_policy_part(dataset, grid, specs, name, kwargs, path):
+    episodes, rollout = evaluate_strategy(dataset, grid, specs, name, **kwargs)
+    _save_table(path, rollout)
+    return episodes
+
+
 def benchmark_policies(config: dict, dataset: GridDataset, grid: pd.DataFrame, output: Path) -> pd.DataFrame:
     specs = [{**s, "split": split} for split in ("validation", "test") for s in dataset.evaluation_specs(split)]
     specs.extend(stress_specs(dataset))
     policies = project_path(config, "artifacts") / "rl"
-    strategies = [(f"fixed_action_{a:02d}", {"fixed": a}) for a in range(32)]
-    strategies += [(f"ddqn_seed_{seed}", {"policy": NumpyPolicy(policies / f"ddqn_seed_{seed}.npz")})
-                   for seed in config["rl"]["seeds"]]
-    strategies.append(("ddqn_selected", {"policy": NumpyPolicy(policies / "ddqn_selected.npz")}))
-    # Hyperparameters fixed beforehand and validation selects one; test is untouched.
-    for estimator in ("last", "harmonic"):
-        for safety in (.6, .8, 1.0):
+    policy = NumpyPolicy(policies / "ddqn_selected.npz")
+    if policy.dataset_sha256 != dataset.dataset_sha256:
+        raise RuntimeError("benchmark policy dataset mismatch: ddqn_selected")
+    # Freeze candidate definitions before selection; never select using test/stress.
+    strategies = [(f"cbr_action_{a:02d}", "cbr", {"cbr": a}) for a in range(32)]
+    for base in (.5, 1, 1.5, 2, 3, 4, 6, 8):
+        for gain in (.5, 1.0):
             for roi in (0, 1, 2, 3, "semantic"):
-                strategies.append((f"heuristic_{estimator}_{safety:g}_roi{roi}",
-                                   {"heuristic": {"estimator": estimator, "safety": safety, "roi_mode": roi}}))
-    episodes, rollouts = [], []
+                strategies.append((f"vbr_base{base:g}_gain{gain:g}_roi{roi}", "vbr",
+                                   {"vbr": {"base_mbps": base, "gain": gain, "roi_mode": roi}}))
     validation_specs = [s for s in specs if s["split"] == "validation"]
     candidates = []
-    selected_strategies = []
-    for name, kwargs in strategies:
-        # Validation for selection, then benchmark ALL fixed actions and DDQN seeds.
-        e, r = evaluate_strategy(dataset, grid, validation_specs, name, **kwargs)
-        episodes.append(e)
-        rollouts.append(r)
-        candidates.append({"strategy": name, "validation_mean_return": float(e["return"].mean()),
-                           "family": "fixed" if "fixed" in kwargs else "heuristic" if "heuristic" in kwargs else "ddqn"})
-        if not name.startswith("heuristic"):
-            selected_strategies.append((name, kwargs))
+    for index, (name, family, kwargs) in enumerate(strategies, 1):
+        score = float(baseline_validation_returns(dataset, grid, validation_specs, **kwargs).mean())
+        candidates.append({"strategy": name, "validation_mean_return": score, "family": family})
+        print(f"benchmark validation candidate {index}/{len(strategies)} {name} return={score:.4f}", flush=True)
     candidate_frame = pd.DataFrame(candidates)
+    selected_strategies = [("ddqn_selected", {"policy": policy}),
+                           ("ddqn_fixed_roi_minus6", {"policy": policy, "fixed_roi": 2})]
     selections = {}
-    for family in ("fixed", "heuristic"):
-        candidate = candidate_frame[candidate_frame.family == family].sort_values(["validation_mean_return", "strategy"], ascending=[False, True]).iloc[0]
-        winner = next(kwargs for name, kwargs in strategies if name == candidate.strategy)
-        selections[family] = candidate.to_dict()
+    for family in ("cbr", "vbr"):
+        candidate = candidate_frame[candidate_frame.family == family].sort_values(
+            ["validation_mean_return", "strategy"], ascending=[False, True]).iloc[0]
+        winner = next(kwargs for name, _, kwargs in strategies if name == candidate.strategy)
+        selections[family] = {**candidate.to_dict(), "parameters": winner}
         selected_strategies.append((f"{family}_validation_selected", winner))
-        e, r = evaluate_strategy(dataset, grid, validation_specs, f"{family}_validation_selected", **winner)
-        episodes.append(e)
-        rollouts.append(r)
+    selected_strategies.append(("oracle_reward_dp", {"oracle": True}))
     candidate_frame.to_csv(output / "validation_candidates.csv", index=False)
     write_json(output / "baseline_selection.json", selections)
-    # Include two prespecified causal baselines with/without semantic ROI for ablation.
-    selected_strategies.extend([(f"causal_harmonic_roi{roi}", {"heuristic": {"estimator": "harmonic", "safety": .8, "roi_mode": roi}})
-                                for roi in (0, "semantic")])
-    other_specs = [s for s in specs if s["split"] != "validation"]
-    for idx, (name, kwargs) in enumerate(selected_strategies):
-        print(f"benchmark policies {idx+1}/{len(selected_strategies)+1} {name}", flush=True)
-        e, r = evaluate_strategy(dataset, grid, other_specs, name, **kwargs)
-        episodes.append(e)
-        rollouts.append(r)
-    e, r = evaluate_strategy(dataset, grid, specs, "oracle_reward_dp", oracle=True)
-    episodes.append(e)
-    rollouts.append(r)
-    return summarize_policies(pd.concat(episodes, ignore_index=True), pd.concat(rollouts, ignore_index=True), output)
+    episodes, rollout_paths = [], []
+    parts_dir = output / "policy_parts"
+    parts_dir.mkdir(parents=True, exist_ok=True)
+    # Independent CPU rollouts; spawn avoids inheriting the parent's CUDA context.
+    # Each worker writes its existing shard, so large GOP frames aren't sent back to the parent.
+    thread_variables = ('OPENBLAS_NUM_THREADS', 'OMP_NUM_THREADS', 'MKL_NUM_THREADS')
+    old_environment = {key: os.environ.get(key) for key in thread_variables}
+    for key in thread_variables:
+        os.environ[key] = '1'
+    completed = {}
+    try:
+        with ProcessPoolExecutor(max_workers=min(4, os.cpu_count() or 1),
+                                 mp_context=multiprocessing.get_context('spawn')) as pool:
+            futures = {}
+            for index, (name, kwargs) in enumerate(selected_strategies):
+                path = parts_dir / f"part_{index:03d}.parquet"
+                rollout_paths.append(path)
+                print(f"benchmark policy scheduled {index+1}/{len(selected_strategies)} {name}", flush=True)
+                futures[pool.submit(_evaluate_policy_part, dataset, grid, specs, name, kwargs, path)] = (index, name)
+            for future in as_completed(futures):
+                index, name = futures[future]
+                e = future.result()
+                if name.endswith("_validation_selected"):
+                    expected = selections[name.removesuffix("_validation_selected")]["validation_mean_return"]
+                    if not np.isclose(e.loc[e.split == "validation", "return"].mean(), expected, atol=1e-8, rtol=0):
+                        raise RuntimeError(f"candidate scoring/rollout mismatch: {name}")
+                completed[index] = e
+                print(f"benchmark policies complete {len(completed)}/{len(selected_strategies)} {name}", flush=True)
+    finally:
+        for key, value in old_environment.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+    episodes = [completed[index] for index in range(len(selected_strategies))]
+    return summarize_policies(pd.concat(episodes, ignore_index=True),
+                             (pd.read_parquet(path) for path in rollout_paths), output)
 
 
 def plots_and_report(output: Path, curves: pd.DataFrame, summary: pd.DataFrame, coverage: dict) -> None:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    video_groups = list(curves.groupby("video_id"))
     for metric in ("vmaf", "roi_ssim", "nonroi_ssim_y", "detection_recall", "semantic_retention"):
-        fig, axes = plt.subplots(1, curves.video_id.nunique(), figsize=(20, 4), squeeze=False)
-        for ax, (video, frame) in zip(axes[0], curves.groupby("video_id")):
-            for delta, group in frame.groupby("delta_qp_roi"):
-                group = group.sort_values("actual_bitrate_mbps")
-                ax.plot(group.actual_bitrate_mbps, group[metric], marker=".", label=f"delta {delta:g}")
-            ax.set_title(video, fontsize=9)
-            ax.set_xlabel("Actual Mbps")
-            ax.set_ylabel(metric)
-            ax.grid(alpha=.3)
-        axes[0, -1].legend()
-        fig.tight_layout()
-        fig.savefig(output / f"rd_{metric}.png", dpi=150)
-        plt.close(fig)
-    names = ["ddqn_selected", "fixed_validation_selected", "heuristic_validation_selected",
-             "causal_harmonic_roi0", "causal_harmonic_roisemantic", "oracle_reward_dp"]
+        for page, start in enumerate(range(0, len(video_groups), 12)):
+            groups = video_groups[start:start + 12]
+            columns = min(4, len(groups))
+            rows = math.ceil(len(groups) / columns)
+            fig, axes = plt.subplots(rows, columns, figsize=(5 * columns, 3.5 * rows), squeeze=False)
+            for ax, (video, frame) in zip(axes.flat, groups):
+                for delta, group in frame.groupby("delta_qp_roi"):
+                    group = group.sort_values("actual_bitrate_mbps")
+                    ax.plot(group.actual_bitrate_mbps, group[metric], marker=".", label=f"delta {delta:g}")
+                ax.set_title(video, fontsize=9)
+                ax.set_xlabel("Actual Mbps")
+                ax.set_ylabel(metric)
+                ax.grid(alpha=.3)
+            for ax in list(axes.flat)[len(groups):]:
+                ax.set_visible(False)
+            axes[0, -1].legend()
+            fig.tight_layout()
+            suffix = "" if page == 0 else f"_page{page + 1:02d}"
+            fig.savefig(output / f"rd_{metric}{suffix}.png", dpi=150)
+            plt.close(fig)
+    names = ["ddqn_selected", "ddqn_fixed_roi_minus6", "cbr_validation_selected",
+             "vbr_validation_selected", "oracle_reward_dp"]
     test = summary[(summary.split == "test") & summary.strategy.isin(names)].set_index("strategy").reindex(names)
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
     for ax, metric in zip(axes, ("vmaf", "bandwidth_violation_rate", "deadline_miss_rate")):
@@ -511,8 +653,9 @@ def plots_and_report(output: Path, curves: pd.DataFrame, summary: pd.DataFrame, 
     lines = ["# Kết quả benchmark video/ROI/bandwidth", "", "## Độ phủ", "",
              f"- {coverage['videos']} video; {coverage['gops']} GOP; {coverage['grid_rows']} GOP/action (32 action).",
              f"- Đo bổ sung {coverage['sample_frames']} frame encoded, offsets {coverage['frame_offsets']} trong mỗi GOP.",
-             "- VMAF, full PSNR/SSIM và ROI metric gốc dùng mọi frame; non-ROI và detection dùng frame sample nêu trên.",
-             "", "## So sánh trên trace test Verizon", "",
+             f"- Metric chất lượng gốc lấy mẫu stride {coverage.get('metric_sample_stride', 5)}; non-ROI và detection dùng frame sample nêu trên.",
+             f"- Reward dùng chung: `{json.dumps(coverage.get('reward', {}), sort_keys=True)}`.",
+             "", "## So sánh trên video và trace test FCC/Norway", "",
              "| Strategy | Reward/GOP | VMAF | ROI SSIM | Non-ROI SSIM Y | Detection recall | Mbps | Vượt BW | Trễ deadline mô phỏng |",
              "|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for name, row in test.iterrows():
@@ -523,12 +666,15 @@ def plots_and_report(output: Path, curves: pd.DataFrame, summary: pd.DataFrame, 
               "- Detection precision/recall/F1 là mức đồng thuận với detection YOLO trên reference, same-class IoU≥0.5, matching một-một theo confidence. Không phải mAP hoặc accuracy với nhãn con người; extra detection không chắc là false positive thực.",
               "- Semantic retention là tỷ lệ reference semantic mass của đối tượng được match; confidence ratio chỉ tính trên đối tượng match nên có survivor bias. Xem recall cùng confidence.",
               "- Rate-distortion dùng bitrate thực. Matched-quality saving nội suy tuyến tính trên Pareto front trong miền chất lượng giao nhau, không ngoại suy và không gọi là BD-rate. Giá trị dương là tiết kiệm, âm là tốn thêm bit.",
-              "- Fixed/heuristic tốt nhất được chọn chỉ bằng validation return, không bằng test. Oracle DP biết trước toàn trace và outcome, tối đa hóa tổng reward không discount; là trần reward trong grid, không phải thuật toán triển khai.",
+              "- CBR và VBR được chọn chỉ bằng validation return, không bằng test. Oracle DP biết trước toàn trace và outcome, tối đa hóa tổng reward không discount; là trần reward trong grid, không phải thuật toán triển khai.",
+              "- CBR mô phỏng giữ target/ROI cố định, thêm filler ảo đến target khi payload thấp hơn; GOP overshoot giữ bitrate thực. Đây không phải encode CBR mới.",
+              "- Fixed ROI dùng cùng DDQN selected, chọn Q cao nhất trong 8 action có ROI ΔQP −6; không train model riêng. Warm-up vẫn dùng action 4 như các phương án khác.",
+              "- VBR mô phỏng đổi target theo semantic: base×(1+gain×(2S−1)), chọn mức grid gần nhất; không dùng BW và không phải constant-quality encoder.",
               "- Mọi strategy dùng warm-up action 4 trong 4 GOP. Quality/return bỏ warm-up, nhưng backlog của warm-up được giữ khi mô phỏng hàng đợi.",
               "- Quality là chất lượng video đã encode, bao gồm cả GOP trễ hoặc chưa truyền xong; không phải chất lượng thực tế viewer nhận được qua mạng. Delivered throughput/utilization chỉ là service của mô hình queue.",
               "- Queue là FIFO không giới hạn, payload cả GOP đến đầu giây, link phục vụ đều trong giây; không RTT, loss, overhead hay pacing encoder. Deadline 1 giây. Uncompleted là chưa truyền xong khi trace episode kết thúc; latency của chúng bị censor, p95 chỉ trên GOP hoàn tất.",
-              "- Bootstrap ghép cặp theo episode rồi gom theo video, 2.000 bootstrap với seed cố định. Chỉ có 5 video cluster, trace windows giữa video có thể tương quan; CI mô tả biến thiên nội dung trong dataset này, không chứng minh tổng quát hóa LTE.",
-              "- Grid encode action cố định còn domain gap với encode liên tục khi chuyển action. Semantic S[k] cần toàn GOP như pipeline gốc. Video train/test dùng chung; chưa có kiểm chứng VCU hoặc mạng thật.",
+              "- Bootstrap ghép cặp theo episode rồi gom theo video, 2.000 bootstrap với seed cố định. Trace windows giữa video có thể tương quan; CI mô tả biến thiên nội dung trong dataset này, không chứng minh tổng quát hóa mạng thật.",
+              "- Grid encode action cố định còn domain gap với encode liên tục khi chuyển action. Semantic S[k] cần toàn GOP như pipeline gốc. Video train/validation/test được tách độc lập; chưa có kiểm chứng VCU hoặc mạng thật.",
               "", "## Artifact", "",
               "- `grid_enriched.parquet`, `frame_samples.parquet`, `semantic_by_class.csv`: metric bổ sung và raw counts.",
               "- `rate_distortion.csv`, `matched_quality_savings.csv`, `roi_vs_nonroi_paired.parquet`: hiệu quả bitrate/ROI.",
@@ -536,7 +682,7 @@ def plots_and_report(output: Path, curves: pd.DataFrame, summary: pd.DataFrame, 
               "- `baseline_selection.json`, `validation_candidates.csv`: bằng chứng chọn baseline trên validation.",
               "- `paired_policy_comparisons.csv`: difference DDQN−baseline và CI theo video.",
               "- `manifest.json`: SHA-256 input/code, tham số, độ phủ, thời gian và môi trường.",
-              "- `rd_*.png`, `policy_comparison.png`: biểu đồ độc lập để xem/chia sẻ."]
+              "- `rd_*.png`, `policy_comparison.png`: biểu đồ độc lập để xem/chia sẻ; RD chia tối đa 12 video/trang."]
     (output / "REPORT.md").write_text("\n".join(lines)+"\n", encoding="utf-8")
 
 
@@ -563,7 +709,8 @@ def run_benchmark(config: dict, frames_per_gop: int = 3, batch_size: int = 8) ->
     curves = rate_distortion(grid, output)
     summary = benchmark_policies(config, dataset, grid, output)
     coverage = {"videos": grid.video_id.nunique(), "gops": grid[["video_id", "gop_idx"]].drop_duplicates().shape[0],
-                "grid_rows": len(grid), "sample_frames": len(samples), "frame_offsets": frame_offsets(frames_per_gop).tolist()}
+                "grid_rows": len(grid), "sample_frames": len(samples), "frame_offsets": frame_offsets(frames_per_gop).tolist(),
+                "reward": config["reward"], "metric_sample_stride": config.get("metrics", {}).get("sample_stride", 1)}
     plots_and_report(output, curves, summary, coverage)
     import torch
     inputs = [ROOT / config["yolo"]["weights"], Path(config["_config_path"]), project_path(config, "artifacts") / "metrics/gop_action_grid.parquet",
@@ -578,12 +725,13 @@ def run_benchmark(config: dict, frames_per_gop: int = 3, batch_size: int = 8) ->
     inputs += [project_path(config, "artifacts") / f"rl/ddqn_seed_{seed}.npz" for seed in config["rl"]["seeds"]]
     manifest = {"status": "complete", "benchmark_version": VERSION, "coverage": coverage,
                 "frames_per_gop": frames_per_gop, "batch_size": batch_size, "elapsed_s": time.monotonic()-start,
+                "reward_config": config["reward"],
                 "input_sha256": {str(p.relative_to(ROOT)): sha256(p) for p in inputs},
                 "code_sha256": {str(p.relative_to(ROOT)): sha256(p) for p in (Path(__file__), Path(__file__).with_name("benchmark_metrics.py"),
                                                                                  Path(__file__).with_name("rl_env.py"), Path(__file__).with_name("policy_numpy.py"))},
                 "python": platform.python_version(), "torch": torch.__version__, "gpu": torch.cuda.get_device_name(0),
                 "bootstrap_seed": 20261004, "bootstrap_replicates": 2000,
-                "limits": ["sampled extra frame metrics", "reference detector pseudo labels", "shared videos across splits",
+                "limits": ["sampled extra frame metrics", "reference detector pseudo labels", "subset of BDD100K",
                            "fixed-action encode surrogate", "fluid queue simulation; no real network/VCU measurement"]}
     write_json(output / "manifest.json", manifest)
     print(f"Benchmark complete: {output / 'REPORT.md'} ({time.monotonic()-start:.1f}s)", flush=True)

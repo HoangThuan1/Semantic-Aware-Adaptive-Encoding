@@ -8,8 +8,8 @@ import pytest
 
 from vcu_surrogate.benchmark_metrics import (box_mask, detection_match, fluid_queue,
                                            frame_offsets, matched_rate_saving, region_quality)
-from vcu_surrogate.benchmark import causal_action, oracle_actions, semantic_rates
-from vcu_surrogate.rl_env import reward_for
+from vcu_surrogate.benchmark import oracle_actions, semantic_rates
+from vcu_surrogate.rl_env import bandwidth_penalty, reward_for
 
 
 def test_samples_cover_edges_without_duplicates():
@@ -74,15 +74,12 @@ def test_matched_quality_saving_does_not_extrapolate():
     assert no_overlap['status'] == 'no_quality_overlap'
 
 
-def test_heuristic_uses_history_and_handles_zero():
-    bitrates = np.array([.5, 1, 1.5, 2, 3, 4, 6, 8])
-    assert causal_action(np.array([10, 10, 10, 1]), .8, bitrates, .8, 'last', 'semantic') == 3
-    assert causal_action(np.array([4, 0, 4, 4]), .1, bitrates, 1, 'harmonic', 0) == 0
-
-
-def test_dp_oracle_matches_bruteforce_with_switch_cost():
-    cfg = dict(full_vmaf=.45, roi_ssim=.25, bandwidth_violation=.2,
-               bandwidth_utilization=.05, action_switch=.05, bandwidth_epsilon_mbps=.05, penalty_cap=4)
+@pytest.mark.parametrize('violation,switch', [(.2, .05), (.5, .05), (.6, .1), (1., .05)])
+@pytest.mark.parametrize('shape', ['quadratic', 'linear_shoulder'])
+def test_dp_oracle_matches_bruteforce_with_switch_cost(violation, switch, shape):
+    cfg = dict(full_vmaf=.45, roi_ssim=.25, bandwidth_violation=violation,
+               bandwidth_utilization=.05, action_switch=switch, bandwidth_epsilon_mbps=.05, penalty_cap=4,
+               bandwidth_penalty_shape=shape)
     rng = np.random.default_rng(10)
     outcomes = []
     for k in range(2):
@@ -104,6 +101,71 @@ def test_dp_oracle_matches_bruteforce_with_switch_cost():
     assert score(actions) == pytest.approx(optimum)
 
 
+def test_linear_shoulder_penalty_is_stronger_continuous_and_capped():
+    cfg = dict(penalty_cap=4, bandwidth_penalty_shape='linear_shoulder')
+    ratios = np.array([0, 1, 1.1, 1.2, 1.5, 2, 4])
+    assert bandwidth_penalty(ratios, cfg) == pytest.approx([0, 0, .1, .2, .5, 1.25, 4])
+    assert float(bandwidth_penalty(1.5-1e-8, cfg)) == pytest.approx(.5, abs=2e-8)
+    assert float(bandwidth_penalty(1.5+1e-8, cfg)) == pytest.approx(.5, abs=2e-8)
+    assert np.all(bandwidth_penalty(ratios, cfg) >= bandwidth_penalty(ratios, dict(penalty_cap=4)))
+    with pytest.raises(ValueError):
+        bandwidth_penalty(1.2, dict(penalty_cap=4, bandwidth_penalty_shape='unknown'))
+
+
+@pytest.mark.parametrize('strategy', [
+    {'cbr': 4}, {'cbr': 31},
+    {'vbr': dict(base_mbps=1.5, gain=1., roi_mode='semantic')},
+])
+def test_baseline_candidate_returns_match_full_rollout_with_outage_and_padding(strategy):
+    from vcu_surrogate.benchmark import (COUNT_COLUMNS, QUALITY_COLUMNS,
+                                        baseline_validation_returns, evaluate_strategy)
+    from vcu_surrogate.rl_env import GridDataset
+    dataset = GridDataset.__new__(GridDataset)
+    dataset.reward_config = dict(full_vmaf=.45, roi_ssim=.25, bandwidth_violation=1.,
+        bandwidth_utilization=0., action_switch=.05, bandwidth_epsilon_mbps=.05,
+        penalty_cap=4, bandwidth_penalty_shape='linear_shoulder')
+    dataset.semantic_by_video = {'clip': np.array([.1, .2, .3, .4, .1, .8, .5, 1.])}
+    dataset.trace_by_split = {'validation': {'trace': np.array([2., 0, 1, .75, 1, 0, .4, 3, 2, 1, 1])}}
+    bitrates = [.5, 1, 1.5, 2, 3, 4, 6, 8]
+    grid = pd.DataFrame([dict(video_id='clip', gop_idx=k, action_id=a,
+        bitrate_index=a//4, roi_index=a%4, target_bitrate_mbps=bitrates[a//4],
+        delta_qp_roi=[0, -3, -6, -9][a%4], actual_bitrate_mbps=.35 + a*.12,
+        vmaf=40+a, roi_ssim=.7+a*.002 if k != 5 else np.nan,
+        roi_frame_count=30 if k != 5 else 0,
+        **{c: 1. for c in (*COUNT_COLUMNS, *QUALITY_COLUMNS)})
+        for k in range(8) for a in range(32)])
+    specs = [dict(split='validation', video_id='clip', trace_id='trace', trace_start=offset)
+             for offset in (0, 3)]
+    scores = baseline_validation_returns(dataset, grid, specs, **strategy)
+    episodes, rollout = evaluate_strategy(dataset, grid, specs, 'candidate', **strategy)
+    assert scores == pytest.approx(episodes['return'].to_numpy())
+    if 'cbr' in strategy:
+        assert (rollout.actual_bitrate_mbps >= rollout.target_bitrate_mbps).all()
+        assert (rollout.padding_mbps > 0).any()
+    else:
+        assert (rollout.padding_mbps == 0).all()
+
+
+def test_vbr_semantic_proxy_is_bounded_and_has_no_bandwidth_input():
+    from vcu_surrogate.benchmark import vbr_action
+    bitrates = np.array([.5, 1, 1.5, 2, 3, 4, 6, 8])
+    assert vbr_action(np.array([0., .5, 1.]), bitrates, 1., 1., 'semantic').tolist() == [0, 6, 15]
+
+
+def test_fixed_roi_selects_best_allowed_q_instead_of_overwriting_global_argmax():
+    from vcu_surrogate.benchmark import fixed_roi_policy_action
+    class Policy:
+        def q_values(self, state):
+            q = np.zeros((1, 32))
+            q[0, 31] = 100  # Global best is not an allowed ROI action.
+            q[0, 6] = 10
+            q[0, 30] = 5
+            return q
+    assert fixed_roi_policy_action(Policy(), np.zeros(6), 2) == 6
+    with pytest.raises(ValueError):
+        fixed_roi_policy_action(Policy(), np.zeros(6), 4)
+
+
 def test_cuda_region_quality_matches_cpu_definition():
     torch = pytest.importorskip('torch')
     if not torch.cuda.is_available():
@@ -118,3 +180,69 @@ def test_cuda_region_quality_matches_cpu_definition():
             gpu = region_quality_cuda(reference, distorted, mask)
             for key in ('roi_psnr_y', 'nonroi_psnr_y', 'roi_ssim_y', 'nonroi_ssim_y'):
                 assert gpu[key] == pytest.approx(cpu[key], abs=1e-3)
+
+
+def test_streamed_policy_summary_matches_single_frame(tmp_path):
+    pytest.importorskip("pyarrow")
+    from vcu_surrogate.benchmark import summarize_policies
+    from vcu_surrogate.benchmark import COUNT_COLUMNS, QUALITY_COLUMNS
+    parts, episodes = [], []
+    for name in ('ddqn_selected', 'cbr_validation_selected'):
+        fields = {key: [1., 1.] for key in (*COUNT_COLUMNS, *QUALITY_COLUMNS)}
+        fields.update(strategy=[name] * 2, split=['test'] * 2, video_id=['clip'] * 2,
+                      trace_id=['trace'] * 2, trace_start=[0] * 2,
+                      reward=[.1, .3], vmaf=[80., 82.], roi_ssim=[.8, .9],
+                      actual_bitrate_mbps=[1., 1.], bandwidth_violation=[False, True],
+                      penalty_action_switch=[0., .25], deadline_miss=[False, True],
+                      uncompleted=[False, True], completion_latency_s=[.5, np.nan],
+                      backlog_mbit=[0., 1.], excess_mbit=[0., 1.], served_mbit=[1., 0.],
+                      unused_capacity_mbit=[1., 0.], bandwidth_mbps=[2., 0.], post_drop=[False, True])
+        parts.append(pd.DataFrame(fields))
+        episodes.append(dict(strategy=name, split='test', video_id='clip', trace_id='trace', trace_start=0,
+                             gops=2, return_value=.4, reward_per_gop=.2, vmaf=81.,
+                             actual_bitrate_mbps=1., bandwidth_violation=.5, deadline_miss=.5))
+    episode_table = pd.DataFrame(episodes).rename(columns={'return_value': 'return'})
+    combined = pd.concat(parts, ignore_index=True)
+    a = summarize_policies(episode_table, combined, tmp_path / 'single')
+    b = summarize_policies(episode_table, iter(parts), tmp_path / 'streamed')
+    pd.testing.assert_frame_equal(a, b)
+    pd.testing.assert_frame_equal(pd.read_parquet(tmp_path / 'streamed/policy_rollouts.parquet'), combined)
+    comparisons = pd.read_csv(tmp_path / 'streamed/paired_policy_comparisons.csv')
+    assert (comparisons.mean_paired_episode_difference == 0).all()
+
+
+def test_nms_timeout_retries_every_image_without_treating_empty_as_complete():
+    import logging
+    from types import SimpleNamespace
+    from vcu_surrogate.benchmark import _predict_complete
+    logger=logging.getLogger('nms-timeout-test')
+    calls=[]
+    def model(images,size):
+        calls.append(list(images))
+        if len(images)>1:
+            logger.warning('WARNING NMS time limit 0.900s exceeded')
+            return SimpleNamespace(xyxy=[np.array([images[0]]),np.empty(0),np.empty(0)])
+        return SimpleNamespace(xyxy=[np.array([images[0]])])
+    original_handlers=list(logger.handlers)
+    output,retried=_predict_complete(model,[10,20,30],640,logger)
+    assert retried and calls==[[10,20,30],[10],[20],[30]]
+    assert [x.tolist() for x in output]==[[10],[20],[30]]
+    assert logger.handlers==original_handlers
+
+
+def test_nms_normal_empty_predictions_are_kept_and_handler_cleans_up_on_error():
+    import logging
+    from types import SimpleNamespace
+    from vcu_surrogate.benchmark import _predict_complete
+    logger=logging.getLogger('nms-normal-test')
+    calls=[]
+    def model(images,size):
+        calls.append(images)
+        return SimpleNamespace(xyxy=[np.empty((0,6)) for image in images])
+    output,retried=_predict_complete(model,[10,20],640,logger)
+    assert not retried and len(calls)==1 and len(output)==2
+    original_handlers=list(logger.handlers)
+    def broken(images,size):raise RuntimeError('model failed')
+    with pytest.raises(RuntimeError,match='model failed'):
+        _predict_complete(broken,[10],640,logger)
+    assert logger.handlers==original_handlers

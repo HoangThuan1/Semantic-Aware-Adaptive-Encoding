@@ -1,0 +1,17 @@
+{
+  "bdd_videos": 51,
+  "changed_manifests": [
+    "artifacts/fcc_bdd/encodes/DowntownDrive_dashcam/manifest.parquet",
+    "artifacts/fcc_bdd/smoke/encodes/manifest.parquet",
+    "artifacts/fcc_bdd/smoke/reference/manifest.parquet",
+    "artifacts/fcc_bdd/reference/manifest.parquet"
+  ],
+  "dataset_sha256": "28fbfdd759c2ea76bb6bf6d97f113502f9f153856f7429e21b238a372247adb5",
+  "status": "passed",
+  "video_splits": {
+    "test": 17,
+    "train": 35,
+    "validation": 4
+  },
+  "videos": 56
+}

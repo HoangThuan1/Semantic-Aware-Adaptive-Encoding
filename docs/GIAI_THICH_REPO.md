@@ -2,16 +2,18 @@
 
 Tài liệu này mô tả implementation đang có trong repo, dựa trên mã nguồn, cấu hình và báo cáo đã lưu. Những đoạn ghi **“khi tự làm”** là phân tích lựa chọn hoặc phần cần xây thêm; chúng không có nghĩa repo đã triển khai phần đó. Các con số kết quả là từ artifact hiện có, không phải một lần chạy lại pipeline khi viết tài liệu.
 
+Đối chiếu ngày 12/10/2026. Cấu hình của pipeline surrogate là `config/pipeline.yaml`; đường dẫn dữ liệu đã xử lý là `data/processed/fcc_bdd/`, artifact là `artifacts/`, báo cáo là `reports/fcc_bdd/`. Bộ thử nghiệm board trong `root/` dùng `root/manifest.json` và snapshot riêng; policy, reward và baseline của bộ đó cần được đọc riêng ở mục 19.
+
 ## 1. Bài toán thực sự là gì?
 
-Repo xây một môi trường mô phỏng bằng dữ liệu để học cách chọn **bitrate mục tiêu và mức ưu tiên chất lượng cho vùng đối tượng** của video giao thông, mỗi giây quyết định một lần. Đầu vào gồm video MP4 và trace băng thông LTE uplink. Đầu ra gồm dataset, policy DDQN, báo cáo đánh giá và video minh họa quyết định của policy.
+Repo xây một môi trường mô phỏng bằng dữ liệu để học cách chọn **bitrate mục tiêu và mức ưu tiên chất lượng cho vùng đối tượng** của video giao thông, mỗi giây quyết định một lần. Đầu vào gồm video MP4/MOV và trace FCC/Norway. Đầu ra gồm dataset, policy DDQN, báo cáo đánh giá và video minh họa quyết định của policy.
 
 Một action có hai thành phần:
 
 - Bitrate mục tiêu: muốn encoder tạo ra bao nhiêu Mbps.
 - ROI delta-QP: giảm QP bao nhiêu trong vùng có đối tượng. QP thấp hơn thường giữ nhiều chi tiết hơn và có thể cần nhiều bit hơn.
 
-Repo dùng libx264 làm **surrogate**, tức bộ encode thay thế để tạo dữ liệu trước khi triển khai trên VCU thật. README đề cập ZCU106; repo chưa cung cấp vòng điều khiển camera → mạng → VCU trên board.
+Pipeline dataset/train dùng libx264 làm **surrogate**, tức bộ encode thay thế để tạo dữ liệu. Repo còn có bộ runtime ZCU106 trong `root/`: đọc clip NV12 từ RAM, chạy scaler/DPU, chọn bitrate/ROI và encode bằng VCU. Runtime dùng bandwidth từ trace; vòng thu camera và feedback mạng trực tiếp vẫn cần bổ sung. Có mã runtime và manifest chưa đồng nghĩa đã có kết quả kiểm chứng phần cứng trong lần rà tài liệu này.
 
 Các thuật ngữ cần phân biệt:
 
@@ -39,7 +41,7 @@ flowchart TD
     E --> M[Đo chất lượng và payload mỗi GOP]
     N --> M
     Y --> M
-    T[Trace LTE uplink Mahimahi] --> B[Đếm packet opportunity mỗi giây thành Mbps]
+    T[Trace FCC/Norway] --> B[Tích phân throughput thành Mbps từng giây]
     M --> TR[Transitions theo action schedule]
     S --> TR
     B --> TR
@@ -53,6 +55,10 @@ flowchart TD
     EV --> NP[Policy NumPy cho ARM]
     EV --> R[Ghép GOP minh họa policy]
     E --> R
+    EV --> BK[Benchmark policy và baseline]
+    M --> BK
+    Y --> BK
+    B --> BK
 ```
 
 Có hai nhánh dễ nhầm. `transitions.parquet` là dataset theo một lịch action cụ thể. Nhưng `train()` **không nạp file này để học cố định từ những transition ấy**: nó tương tác với `OfflineGOPEnv`, tra outcome của action được chọn trong grid và tự đưa transition mới vào replay buffer. Schema của transition vẫn được môi trường kiểm tra.
@@ -63,21 +69,24 @@ Vì vậy có thể gọi đây là RL trên môi trường surrogate offline c�
 
 ### 3.1 Video lấy từ đâu?
 
-`video.py` quét tất cả `videos/*.mp4`, dùng tên file không có đuôi làm `video_id`. Workspace hiện có Sample_Video1, NightDrive_dashcam, Highspeed_dashcam, RainyDrive_dashcam và DowntownDrive_dashcam.
+Bước `download` lấy khoảng 1 GB video BDD100K qua HTTP Range từ mirror Hugging Face đã pin revision, kiểm CRC/decode/SHA-256. `video.py` đọc manifest chứa video MP4/MOV, gồm video tải mới và 5 video hiện có. Video BDD có ID tiền tố `bdd_`.
 
-Repo không có downloader video, annotation ground truth hay quy trình chứng minh nguồn gốc của các video này. Bước `download` chỉ tải/check model và trace mạng. Muốn thêm video thì tự đặt MP4 trong `videos/`, rồi tái tạo các artifact phụ thuộc.
+Manifest chia video nguyên vẹn: 70% phát triển, 30% test; 10% phần phát triển làm validation. Seed cố định 20260923, shuffle ID đã sort, loại trùng checksum. Train/validation/test có cả video và phiên trace riêng. Video subset theo thứ tự archive, chưa bảo đảm phân bố thời tiết/cảnh quay đại diện.
 
-**Khi tự làm:** phải chọn dữ liệu đại diện cho môi trường mục tiêu: ban ngày, ban đêm, mưa, tốc độ cao, vật thể nhỏ, chuyển động nhanh. Hiện tại split train/validation/test theo **trace mạng**, không theo video: cùng tập nội dung video được dùng trong các split. Kết quả test đo khả năng thích nghi với trace giữ lại, chưa chứng minh tổng quát hóa sang cảnh quay chưa thấy.
+Snapshot `reports/fcc_bdd/run_status.json` ghi nhận 51 video BDD khoảng 1,006 GB cộng 5 video có sẵn: tổng 56 video, chia 35 train, 4 validation và 17 test. Tỷ lệ thực chịu làm tròn số video. Catalog có 127 trace: FCC 41/9/9 và Norway 47/10/11 cho train/validation/test.
 
 ### 3.2 Vì sao dùng Docker và pin phiên bản?
 
-`docker/Dockerfile` có ba stage:
+`docker/Dockerfile` có bốn stage:
 
-1. `media-builder`: build libvmaf v3.0.0, FFmpeg n6.1.1 có libx264/libvmaf và chương trình C++ `roi_encoder`.
-2. `pipeline-test`: môi trường kiểm thử media và phần Python thích hợp, không cần chạy YOLO trên GPU.
-3. Image chính: PyTorch 2.2.2, CUDA 12.1, torchvision 0.17.2, YOLOv5 v7.0 tại commit `915bbf294bb74c859f0b41f1c23bc395014ea679` và dependencies trong `pyproject.toml`.
+1. `vmaf-cuda-builder`: build VMAF CUDA tại commit `17a67b238ce0539bdeafdc95961abac64fa16ea8`, cài vào `/opt/vmaf-cuda`.
+2. `media-builder`: build libvmaf v3.0.0, FFmpeg n6.1.1 có libx264/libvmaf và chương trình C++ `roi_encoder`, cài vào `/opt/media`.
+3. `pipeline-test`: môi trường kiểm thử media và phần Python thích hợp, không cần chạy YOLO trên GPU.
+4. Image chính: PyTorch 2.2.2, CUDA 12.1, torchvision 0.17.2, YOLOv5 v7.0 tại commit `915bbf294bb74c859f0b41f1c23bc395014ea679` và dependencies trong `pyproject.toml`; copy cả hai bộ media/VMAF vào image.
 
 `preflight` kiểm tra Docker, CUDA, phiên bản torch/torchvision/CUDA, commit YOLO, biến tắt auto-install, FFmpeg, libvmaf và executable. Pipeline chính yêu cầu NVIDIA GPU, không có CPU fallback cho detector/train/evaluate.
+
+Có một điểm cần đồng bộ trong code hiện tại: `preflight()` yêu cầu CLI `vmaf --version` trả `17a67b2`, trong khi Dockerfile đưa `/opt/media/bin` vào PATH và build media VMAF từ tag v3.0.0; VMAF CUDA nằm ở `/opt/vmaf-cuda/bin`. Đây là hai bản build riêng. Khi build image mới, cần kiểm executable thực được resolve và điều kiện version; log preflight cũ không bảo đảm điều kiện ấy đúng với image mới.
 
 Encode bằng x264 và phần lớn đo metric chạy trên CPU. Có GPU không làm toàn bộ pipeline trở thành encode GPU.
 
@@ -159,7 +168,7 @@ Ví dụ một car confidence 0.9, chiếm 4% ảnh: mass = 0.8×0.9×0.2 = 0.14
 
 Các feature khác được lưu: count từng lớp, tổng confidence, tổng area fraction và union area. Union area tránh đếm trùng overlap cho `roi_union_fraction`. Count của GOP là tổng count qua các frame: một xe thấy trong cả 30 frame có thể đóng góp 30, không phải 30 xe khác nhau. Các feature ngoài `semantic_score` được lưu trong dataset nhưng DDQN hiện chỉ dùng một score.
 
-**Quyết định thời gian thực chưa giải quyết:** `S[k]` dùng cả 30 frame của GOP k. Muốn biết chính xác score đó trước khi encode cả GOP phải buffer frame và chạy detector trước. Nếu phải quyết định ngay lúc GOP bắt đầu, cần score từ frame đầu, GOP trước hoặc một bộ dự đoán; khi đó nên tạo lại dữ liệu/train theo đúng định nghĩa state mới. Repo hiện chưa mô phỏng latency detector hay buffering này.
+**Chi phí thời gian của semantic:** `S[k]` dùng cả 30 frame của GOP k. Muốn biết score đó trước khi encode phải buffer frame và chạy detector trước. `OfflineGOPEnv` không tính latency detector hay buffering vào reward. Runtime `root/` đã giữ cả GOP trong RAM và đo timing của các bước. Nếu cần quyết định ngay lúc GOP bắt đầu, phải dùng score từ frame đầu, GOP trước hoặc một bộ dự đoán, rồi tạo lại dữ liệu/train theo đúng định nghĩa state mới.
 
 Output: detection parquet, GOP semantics parquet, ROI CSV từng video và các bảng tổng tại `artifacts/metadata/`.
 
@@ -212,7 +221,7 @@ Output: 32 MP4 mỗi video, sidecar hash, `artifacts/encodes/manifest.parquet` v
 
 ## 7. Đo bitrate và chất lượng
 
-Implementation: `metrics.py`. Tối đa 3 process metric đồng thời; libvmaf bên trong dùng 6 thread.
+Implementation: `metrics.py`. Pipeline metric hiện chạy tối đa 6 process CPU đồng thời; mỗi lượt libvmaf CPU dùng 2 thread. Cấu hình hiện tại không dùng CUDA VMAF (`cuda_workers: 0`). Đừng nhầm số worker này với benchmark bổ sung, vốn có runner và cấu hình riêng.
 
 ### 7.1 R_actual lấy như thế nào?
 
@@ -228,23 +237,25 @@ R_actual[k] = Σ packet.size × 8 / (30/30) / 1_000_000 Mbps
 
 ### 7.2 Chất lượng toàn ảnh
 
-FFmpeg libvmaf so encoded với reference đã chuẩn hóa, đồng bộ timestamp tại 30 FPS. Model `vmaf_v0.6.1`; log có VMAF, PSNR Y và float SSIM từng frame. GOP lấy trung bình metric frame. Thiếu metric bắt buộc thì dừng, không thay thế bằng metric khác.
+FFmpeg libvmaf so encoded với reference đã chuẩn hóa, đồng bộ timestamp tại 30 FPS. Model `vmaf_v0.6.1`; log có VMAF, PSNR Y và float SSIM tại các frame 0, 5, 10, 15, 20, 25 của mỗi GOP. VMAF vẫn dùng ngữ cảnh chuyển động đầy đủ. GOP lấy trung bình 6 mẫu chất lượng, giữ đủ 30 frame và packet của bitstream. Thiếu metric bắt buộc thì dừng, không thay thế bằng metric khác.
 
 ### 7.3 Chất lượng ROI
 
-OpenCV decode cả hai video về ảnh BGR. ROI PSNR dùng mask hợp của **box gốc**, tính MSE trên pixel và cả ba channel; MSE bằng 0 được quy ước PSNR 100.
+Metric ROI dùng ảnh BGR trên các frame mẫu cùng lịch stride 5. Đường `make metrics` đọc video bằng OpenCV; runner compact có thể lấy ảnh từ shared reference cache và luồng decode FFmpeg. ROI PSNR dùng mask hợp của **box gốc**, làm tròn tọa độ ra ngoài bằng floor/ceil, tính MSE trên pixel và cả ba channel; MSE bằng 0 được quy ước PSNR 100.
 
-ROI SSIM tính cho từng crop box gốc bằng scikit-image, data range 255, cửa sổ tối đa 7 và co nhỏ theo kích thước crop. Trọng số mỗi box là:
+ROI SSIM tính cho từng crop box gốc bằng `_roi_ssim()`: OpenCV box filter float64 theo công thức cửa sổ uniform của scikit-image, sample covariance, K1=0.01/K2=0.03, data range 255, lấy trung bình phần nội vi trên ba channel. Cửa sổ tối đa 7 và co nhỏ thành số lẻ theo kích thước crop; crop không đủ cửa sổ 3 bị bỏ khỏi SSIM. Trọng số mỗi box dùng diện tích crop sau làm tròn:
 
 ```text
 class_weight × confidence × diện tích box
 ```
 
-Lấy trung bình có trọng số theo box trong frame, rồi trung bình các frame có metric trong GOP. Box overlap có thể đóng góp nhiều lần vào SSIM; ROI PSNR dùng union mask nên không đếm pixel overlap hai lần. Crop quá nhỏ có thể không có SSIM hợp lệ; pipeline kiểm tra metric hữu hạn khi GOP có ROI.
+Lấy trung bình có trọng số theo box trong frame, rồi trung bình các frame mẫu có metric trong GOP. Box overlap có thể đóng góp nhiều lần vào SSIM; ROI PSNR dùng union mask nên không đếm pixel overlap hai lần. `roi_frame_count` là số frame mẫu có ROI, tối đa 6 với stride 5; `frame_count` vẫn là 30. Môi trường kiểm tra ROI SSIM hữu hạn khi GOP có ROI trên frame mẫu.
 
 Không có ROI thì metric ROI là NaN, `has_roi=False`. Reward dùng ROI quality bằng 0 cho GOP không có ROI. Không tự gán SSIM=1.
 
-**Khi tự làm:** quyết định đánh giá toàn ảnh, vùng quan trọng hay downstream detection. Repo đo VMAF/PSNR/SSIM; nó chưa chạy detector lại trên video nén để đo mức giảm mAP hay khả năng nhận diện. ROI chất lượng hình ảnh cao không tự chứng minh hiệu quả nhận diện tốt.
+Benchmark đã chạy lại YOLO trên frame encoded để đo precision/recall/F1 đồng thuận với detector reference và semantic retention. Mặc định lấy 3 frame/GOP tại offsets `[0,14,29]`, độc lập lịch 6 frame/GOP của metric gốc. Đây là pseudo-label agreement; repo chưa có đánh giá mAP bằng nhãn người. Benchmark còn đo ROI/non-ROI bằng union mask và SSIM grayscale Gaussian 11×11; định nghĩa đó khác ROI SSIM BGR crop dùng trong reward. Xem [BENCHMARK.md](BENCHMARK.md).
+
+**Khi tự làm:** chọn metric phù hợp mục tiêu hình ảnh và nhiệm vụ downstream. ROI SSIM hoặc detector agreement cao chưa tự chứng minh độ chính xác nhận diện với ground truth độc lập.
 
 Output gồm frame metrics, GOP metrics theo action và `artifacts/metrics/gop_action_grid.parquet`, khóa `(video_id,gop_idx,action_id)`.
 
@@ -252,63 +263,17 @@ Output gồm frame metrics, GOP metrics theo action và `artifacts/metrics/gop_a
 
 Implementation: `assets.py`, `traces.py`, `rl_env.py`.
 
-### 8.1 Nguồn bw của repo
+### 8.1 Nguồn bandwidth
 
-Bước download clone Mahimahi từ URL cấu hình, checkout detached commit:
+Dùng `confiwent/Real-world-bandwidth-traces` commit `d28c4fd48d0e358db024cc0217b111c070815fa7`. FCC là các file `trace_*` trong `fcc_ori/cooked_traces`; Norway là log chuyến đi nguyên vẹn cùng thư mục. Không lấy bản backup hoặc ghép lại tập cooked đã trộn sẵn. Manifest lưu nguồn, phiên đo và checksum.
 
-```text
-f1346c38c415abfc98626dd82450f49a57033603
-```
+### 8.2 Quy đổi sang Mbps mỗi giây
 
-Sáu file `.up` trong `data/raw/mahimahi/traces/` có SHA-256 pin trong code. Download manifest ghi nguồn, commit và hash. `.up` được chọn vì bài toán gửi video **uplink**. Repo sử dụng file trace của Mahimahi/Sprout; không gọi `mm-link` để truyền packet thật trong quá trình train, và không chạy speedtest hay đọc tốc độ card mạng.
-
-### 8.2 File không chứa trực tiếp “Mbps từng giây”
-
-Mỗi dòng là một timestamp nguyên không âm tính bằng mili giây, biểu diễn một cơ hội truyền packet 1500 byte theo quy ước parser. Timestamp phải không giảm; dòng rỗng hoặc không phải số làm bước parse lỗi. Nhiều dòng có cùng timestamp đều được đếm.
-
-Ví dụ:
-
-```text
-0
-0
-500
-1500
-3000
-```
-
-Parser `timestamps//1000` rồi `np.bincount`:
-
-| Giây | Khoảng thời gian | Số event | BW |
-|---|---|---:|---:|
-| 0 | [0,1000) ms | 3 | 0.036 Mbps |
-| 1 | [1000,2000) ms | 1 | 0.012 Mbps |
-| 2 | [2000,3000) ms | 0 | 0 Mbps |
-| 3 | [3000,4000) ms | 1 | 0.012 Mbps |
-
-Công thức:
-
-```text
-BW[k] = count(timestamp thuộc giây k) × 1500 × 8 / 1_000_000
-```
-
-Không nội suy, không smoothing, không bỏ giây mất mạng. Bắt đầu đếm từ giây 0 kể cả khi event đầu tới muộn. Độ dài là floor(timestamp cuối/1000)+1; giây cuối vẫn chia cho một giây đầy đủ, không chỉnh mẫu số theo thời gian của event cuối. Parser không suy ra phần thời gian sau timestamp cuối.
-
-**Khi tự làm:** kích thước packet quy ước, cách chia bin, giữ outage và xử lý giây cuối đều ảnh hưởng phân phối bw. Thay cửa sổ một giây bằng 100 ms sẽ thay đổi state/reward và cần đồng bộ với đơn vị quyết định mới.
+File có hai cột timestamp giây và throughput Mbps. Theo convention Pensieve, throughput dòng i áp dụng trên khoảng [timestamp i−1, timestamp i). Tích phân phần giao với mỗi bin một giây để lấy lượng Mbit truyền trong bin, cũng là Mbps trung bình của giây đó. Giữ outage bằng 0; bỏ giây cuối chưa đủ, không nội suy tuyến tính hay scale bandwidth cho khớp bitrate ladder.
 
 ### 8.3 Chia train/validation/test
 
-| File | Vai trò |
-|---|---|
-| `ATT-LTE-driving.up` | Train |
-| `TMobile-LTE-driving.up` | Train |
-| `ATT-LTE-driving-2016.up` | Validation |
-| `Verizon-LTE-driving.up` | Test |
-| `TMobile-LTE-short.up` | Excluded, chỉ catalog |
-| `Verizon-LTE-short.up` | Excluded, chỉ catalog |
-
-File short bị loại để tránh nguy cơ trùng với trace dài. Split được hardcode trong `TRACE_SPLITS`; `split_seed` **không random chia lại các trace**. Seed đó được dùng tạo lịch action của dataset transition.
-
-Output `bandwidth_traces.parquet` có trace/source/split, `gop_idx`, thời gian đầu/cuối giây, Mbps. `trace_catalog.parquet` chứa cả sáu file, hash, duration và thống kê.
+Chia 70/15/15 theo phiên đo và theo từng nguồn với seed cố định. Các file FCC cùng ID phiên được gom trước khi chia. Video và trace chỉ ghép khi cùng split. Evaluation dùng cả FCC và Norway giữ lại.
 
 ### 8.4 Policy có biết bw hiện tại trước khi quyết định không?
 
@@ -326,7 +291,7 @@ Bốn GOP đầu luôn action 4 để thu đủ lịch sử và bitrate GOP trư
 
 Mỗi block 10 episode train có đúng 7 episode trace thật và 3 episode synthetic, xáo trộn thứ tự. Đây là tỷ lệ **episode**, không bảo đảm chính xác tỷ lệ transition vì video dài ngắn khác nhau.
 
-Episode thật chọn video, train trace và offset ngẫu nhiên sao cho đủ chiều dài video. Synthetic ghép các đoạn 10 giây lấy ngẫu nhiên chỉ từ ATT/T-Mobile train, cắt tới chiều dài yêu cầu. Ghi lineage trace và offset từng block để truy nguyên. Synthetic không phải bw random độc lập hay trace tạo từ validation/test; điểm nối block có thể tạo bước nhảy không tự nhiên.
+Episode thật chọn video, train trace và offset ngẫu nhiên sao cho đủ chiều dài video. Synthetic ghép các đoạn 10 giây lấy ngẫu nhiên chỉ từ FCC/Norway train, chọn nguồn 50/50, cắt tới chiều dài yêu cầu. Ghi lineage trace và offset từng block để truy nguyên. Synthetic không phải bw random độc lập hay trace tạo từ validation/test; điểm nối block có thể tạo bước nhảy không tự nhiên.
 
 ### 8.6 Nếu tự triển khai thì phải đo bw ra sao?
 
@@ -371,33 +336,30 @@ Implementation: `reward_for()` trong `rl_env.py`. Đặt R là bitrate thực, B
 
 ```text
 ratio = R / max(B, 0.05)
-violation = min(max(0, ratio−1)^2, 4)
-utilization = min(ratio, 4)
-switch = 0.5 × (abs(i−i_prev)/7 + abs(j−j_prev)/3)
+e = max(0, ratio−1)
+violation = min(e nếu e <= 0.5, còn lại e²+0.25, 4)
+switch = 0.5×(|i−i_prev|/7 + |j−j_prev|/3)
 q_full = VMAF / 100
 q_roi = ROI_SSIM nếu GOP có ROI, ngược lại 0
 
 reward = 0.45×q_full + 0.25×q_roi
-         − 0.20×violation
-         − 0.05×utilization
-         − 0.05×switch
+         − 1.00×violation − 0.05×switch
 ```
 
 Các trọng số là lựa chọn cấu hình; repo không có optimizer tự tìm trọng số tối ưu.
 
 - VMAF khuyến khích chất lượng toàn ảnh.
 - ROI SSIM khuyến khích chất lượng vùng đối tượng.
-- Violation phạt vượt bandwidth bằng bình phương tỷ lệ vượt, có cap.
-- `bandwidth_utilization` được **trừ**: nó là chi phí dùng bandwidth, không phải bonus cố dùng đầy link.
-- Switch phạt thay đổi chỉ số action, không phải độ chênh Mbps trực tiếp. Ví dụ bước 0.5→1 và 6→8 đều cách một index.
+- Violation phạt tuyến tính trong vùng vượt 1×–1,5× BW, sau đó bình phương cộng offset 0,25 để nối liên tục, cap 4.
+- Switching phạt thay đổi chỉ số bitrate/ROI, trọng số 0,05; utilization có trọng số 0.
 
 Epsilon 0.05 tránh chia cho 0 khi mất mạng; cap hạn chế penalty rất lớn. Reward không phạt trực tiếp delay, packet loss hay queue vì môi trường chưa mô hình hóa các đại lượng này. Không có ROI cũng không được phân phối lại trọng số 0.25 sang VMAF.
 
-Ví dụ VMAF=80, ROI SSIM=0.9, R=2 Mbps, B=1 Mbps, không switch: reward = 0.36+0.225−0.20−0.10 = 0.285. Vượt bandwidth vẫn có thể có reward dương; cấu hình không đặt ràng buộc cứng R≤B.
+Ví dụ VMAF=80, ROI SSIM=0.9, R=2 Mbps, B=1 Mbps, không đổi action: reward = 0.36+0.225−1.25 = −0.665. Vượt bandwidth vẫn có thể có reward dương; cấu hình không đặt ràng buộc cứng R≤B.
 
 **Khi tự làm:** quyết định chất lượng so với độ trễ/tiết kiệm mạng, cách xử lý outage, tiêu chuẩn ổn định action và có cần hard constraint. Metric được lưu trước reward nên đổi trọng số có thể tính lại reward và train lại mà không encode lại nếu grid không đổi.
 
-Một hạn chế state đáng chú ý: reward switch phụ thuộc action trước, nhưng state chỉ có bitrate thực trước, không có `previous_action_id` hoặc ROI index trước. Agent không quan sát đầy đủ biến dùng tính reward; cùng R_previous có thể đến từ các action khác nhau. Bốn mẫu bw cũng không đảm bảo mạng là Markov. Muốn state đầy đủ hơn phải cân nhắc thêm action trước, queue hoặc history khác rồi sửa schema/model/export tương ứng.
+Reward hiện phụ thuộc action trước qua switching penalty. State vẫn có bitrate thực trước và bốn mẫu bandwidth; các mẫu này không đảm bảo mạng là Markov.
 
 ## 11. Môi trường RL và chuẩn hóa state
 
@@ -413,7 +375,7 @@ Chuẩn hóa:
 normalized = clip((raw−mean)/std, −10, 10)
 ```
 
-Mean/std cho bốn feature bw lấy từ toàn bộ trace **train**. Mean/std của R_actual lấy từ toàn grid; semantic lấy từ toàn tập video. Vì split theo trace và video dùng chung, đây không phải chuẩn hóa trên một tập video train riêng. Các vector normalizer được export theo policy và phải dùng lại khi triển khai. `NumpyPolicy` nhận **raw state**, tự chuẩn hóa; không chuẩn hóa trước lần nữa.
+Mean/std cho bốn feature bw lấy từ toàn bộ trace **train**. Mean/std của R_actual chỉ lấy grid video train; semantic chỉ lấy video train. Các vector normalizer được export theo policy và phải dùng lại khi triển khai. `NumpyPolicy` nhận **raw state**, tự chuẩn hóa; không chuẩn hóa trước lần nữa.
 
 ## 12. DDQN học như thế nào?
 
@@ -421,7 +383,7 @@ Implementation: `ddqn.py`.
 
 Mạng Q: `6 → Linear128 → ReLU → Linear128 → ReLU → Linear32`. Mỗi đầu ra ước lượng discounted return của một action, không trực tiếp dự đoán bitrate hay bandwidth.
 
-Train ba seed 13, 29, 47, mỗi seed 300.000 step quyết định, mỗi step là một GOP sau warm-up. Mỗi lần gọi train khởi tạo mạng và replay mới.
+Theo `config/pipeline.yaml` hiện tại, train một seed (`13`) trong 300.000 step quyết định; mỗi step là một GOP sau warm-up. Checkpoint tốt nhất được lưu tại các mốc validation, có thể sớm hơn bước cuối. Mỗi lần gọi `train()` khởi tạo mạng, optimizer và replay mới; nó không resume checkpoint cũ.
 
 | Tham số | Giá trị | Tác dụng |
 |---|---:|---|
@@ -457,29 +419,27 @@ Checkpoint `.pt` lưu online/target, optimizer, normalizer, config, seed, step, 
 
 Kiểm tra frame type này không thay thế toàn bộ một phép phân tích bitstream chuyên sâu. Validation passed nghĩa dữ liệu qua các điều kiện code đặt ra; không có nghĩa chất lượng policy đã tối ưu hoặc đủ điều kiện thời gian thực.
 
-Báo cáo có sẵn: 5 video, 8.820 frame, 294 GOP, 32 action, 9.408 grid row, 6 trace trong catalog, 1.096 transition; `status=passed`, thiết bị ghi nhận Quadro T1000.
+Snapshot `reports/fcc_bdd/validation_report.json` hiện ghi `status=passed`: 56 video, 69.420 reference frame, 2.314 GOP, 32 action, 74.048 grid row, 127 trace và 133.724 transition; thiết bị ghi nhận Quadro T1000. `encode_structure_validation=reused_after_sha256_verification` nghĩa lần này dùng lại bằng chứng kiểm frame type trước đó sau khi kiểm input manifest và SHA-256 bitstream. Nhánh validation mặc định không truyền `prior_validation_dir` sẽ decode để kiểm structure trực tiếp.
 
 ### 13.2 Đánh giá policy dùng episode nào?
 
-Validation dùng ATT 2016, test dùng Verizon. Mỗi video được ghép với các đoạn trace **không chồng nhau cho riêng video đó**: offset 0, L, 2L… với L là số GOP video, chỉ lấy đoạn đủ dài. Các video khác nhau vẫn có thể dùng thời gian trace chồng nhau. Evaluation không dùng synthetic và không exploration.
+Validation/test dùng video và trace FCC/Norway tương ứng, không dùng synthetic. Mỗi video được ghép với các đoạn trace **không chồng nhau cho riêng video đó**: offset 0, L, 2L… với L là số GOP video, chỉ lấy đoạn đủ dài. Các video khác nhau vẫn có thể dùng thời gian trace chồng nhau. Evaluation không dùng synthetic và không exploration.
 
-Mỗi seed lưu checkpoint khi **mean validation episode return** tăng. Sau train chọn seed tốt nhất trên validation. Test đánh giá cả ba seed và báo mean/std qua seed, không chọn seed theo test.
+Mỗi seed được cấu hình lưu checkpoint khi **mean validation episode return** tăng. Sau train, seed được chọn theo validation. Với cấu hình hiện tại chỉ có seed 13, nên summary không phải phép đo độ biến thiên giữa nhiều seed.
 
-Mean return là trung bình **tổng reward episode**, không phải reward/GOP. Video dài có thể tạo return lớn hơn; còn mean VMAF/bitrate/violation tính trên các row rollout, nên weighting khác mean return. `std_return` đo biến thiên episode; `test_aggregate.std` đo biến thiên giữa ba seed, không phải confidence interval.
+Mean return là trung bình **tổng reward episode**, không phải reward/GOP. Video dài có thể tạo return lớn hơn; còn mean VMAF/bitrate/violation tính trên các row rollout, nên weighting khác mean return. `std_return` đo biến thiên episode. Khi chỉ có một seed, `test_aggregate.std` bằng 0 và không thể hiện độ bất định hay độ biến thiên giữa các seed.
 
-Warm-up bị loại khỏi metric rollout. Violation rate đơn giản là tỷ lệ GOP `R_actual>BW`, khác penalty bình phương có epsilon/cap. Action-switch rate tính cả quyết định đầu sau warm-up so với action warm-up.
+Warm-up bị loại khỏi metric rollout. Violation rate đơn giản là tỷ lệ GOP `R_actual>BW`, khác penalty tuyến tính/bình phương có epsilon/cap. Action-switch rate tính cả quyết định đầu sau warm-up so với action warm-up.
 
 ### 13.3 Báo cáo hiện có nói gì?
 
-Theo `reports/rl/evaluation_summary.json`, policy được chọn là seed 13, checkpoint step 240.000, validation mean return khoảng 10.870. Trên 161 episode test: VMAF khoảng 73.431, ROI SSIM 0.9231, bitrate thực trung bình 3.2595 Mbps, violation rate 21.75%, switch rate 55.77%, mean return 15.878.
+Theo snapshot `reports/fcc_bdd/rl/evaluation_summary.json` hiện có, policy được chọn là seed 13, checkpoint step 110.000; validation mean return là 3.898. Trên 10.446 episode test, mean return là 6.627, VMAF 54.442, ROI SSIM 0.8392, bitrate payload trung bình 1.131 Mbps, violation rate 31.57%, switch rate 25.94%. Đây là số của artifact đang lưu; nếu chạy lại pipeline, cần đọc summary mới thay vì coi chúng là hằng số của implementation.
 
-Seed 29 có test mean return khoảng 16.041 cao hơn seed 13, nhưng vẫn không được chọn vì validation seed 13 tốt hơn. Đây là hành vi đúng với quy tắc selection đang dùng.
-
-Các file `reports/rl/` cũ không chứa baseline cố định bitrate, heuristic theo bw hay oracle để so sánh. Bộ benchmark bổ sung trong `benchmark.py` nay thực hiện các đối chiếu này, cùng metric non-ROI và bảo toàn detection; xem [hướng dẫn benchmark](BENCHMARK.md) và kết quả sau khi chạy tại `reports/benchmark/REPORT.md`. Vẫn chưa có kiểm chứng trên VCU thật hay cảnh quay độc lập.
+Benchmark hiện có ở `reports/fcc_bdd/benchmark/REPORT.md` báo cáo trên 56 video, 2.314 GOP và 74.048 cặp GOP/action. Trong bảng hiện lưu, `ddqn_selected` có reward/GOP 0.1975, VMAF 54.44, ROI SSIM 0.8392, non-ROI SSIM Y 0.8722, detection recall 0.7695, bitrate 1.131 Mbps, vượt BW 31.57% và deadline miss mô phỏng 51.36%. Baseline CBR/VBR được chọn bằng validation; oracle biết trước trace là trần trong grid, không phải policy triển khai. Deadline miss là kết quả queue model có giả định được mô tả trong [docs/BENCHMARK.md](BENCHMARK.md). Chưa có kiểm chứng trên VCU hoặc mạng thật.
 
 ## 14. Export policy để chạy ARM
 
-`evaluate()` export `.npz` cho từng seed, so Q-value và argmax NumPy với PyTorch trên state của test rollout: max Q error phải ≤1e−5 và action phải khớp. Báo cáo hiện có ghi error 0.0. `export-policy` export policy seed được chọn thành `artifacts/rl/ddqn_selected.npz`.
+`evaluate()` export `.npz` cho từng seed, so Q-value và argmax NumPy với PyTorch trên state của test rollout: max Q error phải ≤1e−5 và action phải khớp. Snapshot hiện có ghi error 0.0. `export-policy` export policy seed được chọn thành `artifacts/rl/ddqn_selected.npz`.
 
 File NPZ chứa weights/bias ba linear layer, normalizer, action table, state columns, FPS/GOP và warm-up contract. `policy_numpy.py` chỉ cần NumPy, kiểm schema và shape, chạy matrix multiply/ReLU rồi argmax.
 
@@ -499,7 +459,7 @@ Module này cho phép suy luận Q trên ARM nhưng **không tự điều khiể
 
 ## 15. Render policy video: xem được điều gì?
 
-`render.py` đọc test rollout của seed được chọn, lấy riêng Verizon offset 0 cho từng video. Nó thêm bốn action warm-up rồi tạo playlist ffconcat. GOP k lấy khoảng `[k,k+1)` từ file encode của action được chọn, FFmpeg ghép bằng `-c:v copy`, không encode lại. Sau ghép kiểm frame count và pattern key/I/P, lưu MP4, action list và hash.
+`render.py` đọc test rollout của seed được chọn, lấy trace test hợp lệ đầu tiên theo ID, offset 0, cho từng video test. Nó thêm bốn action warm-up rồi tạo playlist ffconcat. GOP k lấy khoảng `[k,k+1)` từ file encode của action được chọn, FFmpeg ghép bằng `-c:v copy`, không encode lại. Sau ghép kiểm frame count và pattern key/I/P, lưu MP4, action list và hash.
 
 Video này cho thấy hình ảnh theo lựa chọn offline. Nó không thể hiện packet loss, buffering, delay mạng hay lỗi truyền khi R vượt B. Nó cũng không phải video đã encode liên tục với rate control đổi theo action. Mỗi đoạn lấy từ lượt encode toàn video với action cố định; xem video không đủ để đánh giá tính ổn định VBV khi switch thật.
 
@@ -513,30 +473,33 @@ make preflight
 make all
 ```
 
-`make all` lần lượt preflight → download → normalize → infer → encode → metrics → traces → transitions → validate → train → evaluate → render-policy. Evaluate đã gọi export policy được chọn, nên `all` không cần target export riêng.
+Khi chạy `make all` tuần tự, các prerequisite được liệt kê theo thứ tự preflight → download → normalize → infer → encode → metrics → traces → transitions → validate → train → evaluate → export-policy → render-policy → benchmark. `evaluate()` cũng gọi export policy được chọn; Makefile vẫn có target export riêng trong `all`.
 
 Để chạy từng giai đoạn:
 
 | Lệnh | Input chính | Output chính |
 |---|---|---|
-| `make download` | URL/commit/hash pin | Weights, raw traces, download manifest |
-| `make normalize` | `videos/*.mp4` | Reference lossless và manifest |
+| `make download` | URL/commit/hash pin | Weights, raw traces, BDD video và manifests |
+| `make normalize` | Manifest video MP4/MOV | Reference lossless và manifest |
 | `make infer` | Reference + weights | Detection, ROI CSV, semantics |
 | `make encode` | Reference + ROI | 32 encode/video và action table |
 | `make metrics` | Encode + reference + detection | Frame metrics và GOP/action grid |
-| `make traces` | Raw `.up` | BW theo giây và catalog |
+| `make traces` | File timestamp/throughput FCC/Norway | BW theo giây và catalog |
 | `make transitions` | Grid + semantics + BW | Transition, schedule, schema |
 | `make validate` | Dataset và encode | Validation report |
 | `make train` | Grid + semantics + traces + schema | Best checkpoint từng seed, learning logs |
 | `make evaluate` | Checkpoint và dataset | Rollout, summary, NPZ và selected policy |
 | `make export-policy` | Selected seed + checkpoint | `ddqn_selected.npz` |
 | `make render-policy` | Selected test rollout + encodes | Policy MP4 |
+| `make benchmark` | Grid, detection, video encoded và policy | Metric bổ sung, baseline/oracle, queue model và report |
 
 Makefile chạy container với user UID/GID host, bind mount repo tại `/workspace`, HOME trong container là `/tmp`, IPC host. Các target cần CUDA dùng `--gpus all`; các bước khác dùng container thường. Python mặc định ROOT là `/workspace`; chạy trực tiếp ở host phải đặt `VCU_PROJECT_ROOT` đúng, nhưng pipeline chuẩn vẫn dùng Docker và preflight yêu cầu Docker.
 
 Chạy schedule tùy chỉnh theo ví dụ README bằng subcommand `transitions --schedule <CSV>`. CLI nhận `--config` trước subcommand; subcommand encode tên `encode-grid`, tương ứng `make encode`.
 
 **Không dùng `make -j all`** với Makefile hiện tại: các giai đoạn được liệt kê thành prerequisite của `all`, chưa có dependency graph chi tiết buộc từng bước đợi input. Chạy song song có thể khiến metrics/encode/train đi trước dữ liệu của chúng. Nếu cần orchestration song song, phải khai báo dependency hoặc dùng CLI `all` tuần tự.
+
+Runner `scripts/run_fcc_bdd.py` có luồng riêng: chờ download manifest, chạy test/preflight và smoke 6 giây để ước lượng dung lượng, rồi gọi các stage. Stage encode-grid của runner gọi `scripts/prepare_grid_compact.py`, xử lý từng video với đủ 32 action, decode reference thành cache dùng chung và đo metric theo hàng đợi action. Mỗi hai video hoàn tất sẽ đo benchmark bổ sung cho cặp đó; benchmark cuối tái sử dụng cache. Cache YUV/BGR tạm được xóa sau khi xử lý, còn video nguồn, FFV1, encodes và metric parquet được giữ. Trạng thái ở `reports/fcc_bdd/run_status.json`, `compact_progress.json` và `logs/`; một stage đã đánh dấu complete có thể được runner bỏ qua theo config hash. Thay code cần xem lại stage đã hoàn tất, vì runner không dùng code hash để quyết định chạy lại mọi stage.
 
 ### Resume và hash có giới hạn gì?
 
@@ -547,15 +510,16 @@ Nhưng không phải mọi bước đều resume hoặc kiểm toàn bộ hash n
 - Trace/transition ghi lại bảng; train khởi tạo lại từ đầu.
 - Normalize dùng job hash, không tự kiểm lại output SHA mỗi lần reuse.
 - Inference reuse theo job hash và file tồn tại.
-- Encode reuse kiểm job hash/frame count; hash output được tính cho manifest.
-- Metric cache key hiện dựa encoded/reference hash và danh sách metric, chưa bao gồm detection hash, phiên bản implementation hoặc mọi tham số metric.
+- Encode mới kiểm frame count trước khi ghi sidecar; reuse kiểm job hash và SHA-256 bitstream để giữ bằng chứng kiểm trước đó, không decode lại chỉ để đếm frame.
+- Metric cache key gồm dataset hash, encoded/reference hash, danh sách metric và lịch sampling nếu stride khác 1; chưa gồm detection hash hoặc code hash. Reuse kiểm frame coverage, GOP sampling và output checksum khi sidecar có các trường checksum. Cache full-frame hợp lệ có thể được chuyển sang stride 5 bằng chọn kết quả đã lưu rồi aggregate lại, không decode lại.
 - Render reuse kiểm cả job hash và output hash.
+- Benchmark có cache riêng gồm input/config/code/output hash; cache không khớp được tính lại. Không áp dụng quy tắc này ngược lại cho mọi cache của pipeline.
 
 Vì vậy sửa code, detection hay công thức metric có thể cần chủ động tái tạo artifact liên quan dù cache chưa phát hiện. Không được suy ra “file tồn tại là dữ liệu chắc chắn mới nhất”.
 
 ## 17. Kiểm thử và các giới hạn của cấu hình
 
-Test hiện có kiểm action mapping, ROI alignment/clipping, union overlap, parse timestamp lặp/giây rỗng, tỷ lệ episode 70/30, balanced schedule, causal bandwidth state/warm-up/previous bitrate, thiếu grid action, train-only bandwidth normalization/synthetic, Double DQN target, NumPy/PyTorch parity và integration normalize/ROI encoder/GOP structure.
+Test hiện có kiểm action mapping, ROI alignment/clipping, union overlap, parse timestamp lặp/giây rỗng, tỷ lệ episode 70/30, balanced schedule, causal bandwidth state/warm-up/previous bitrate, thiếu grid action, train-only bandwidth normalization/synthetic, Double DQN target, NumPy/PyTorch parity và integration normalize/ROI encoder/GOP structure. Các file bổ sung kiểm benchmark/oracle, compact storage, reuse metric cũ và contract bundle ZCU106. Đây là phạm vi test trong repo; tài liệu không coi việc test tồn tại là bằng chứng lần chạy test hiện tại đã pass.
 
 ```bash
 make build-test
@@ -572,23 +536,42 @@ Nhiều mục YAML bị khóa bởi `PIPELINE_CONTRACT` trong `common.py`: video
 
 | Quyết định | Repo hiện chọn/làm | Phần cần làm thêm |
 |---|---|---|
-| Đo bandwidth | Capacity trace LTE theo giây | Estimator/feedback mạng thật với cùng ý nghĩa state |
+| Đo bandwidth | Capacity trace FCC/Norway theo giây | Estimator/feedback mạng thật với cùng ý nghĩa state |
 | Đơn vị điều khiển | 1 giây, GOP30 | Kiểm độ trễ chấp nhận được và đồng bộ clock |
-| Semantic của GOP hiện tại | Trung bình detector cả GOP | Buffer trước encode hoặc định nghĩa feature nhân quả mới |
-| Encoder | x264 surrogate action cố định | Adapter VCU và cập nhật bitrate/ROI đúng biên GOP |
-| Bitrate previous | Byte payload từ grid | Counter payload thực mỗi GOP |
-| Network dynamics | Chỉ so R với B | Queue, RTT, loss, transport feedback nếu mục tiêu cần |
+| Semantic của GOP hiện tại | Score cả GOP; runtime `root/` buffer GOP trước encode | Đo latency end-to-end hoặc đổi feature để quyết định sớm hơn |
+| Encoder | Grid x264 action cố định; `root/` có adapter VCU | Kiểm bitrate/ROI động trên phần cứng và đo domain gap |
+| Bitrate previous | Surrogate tra grid; runtime đếm payload encode thực | Đồng bộ feedback payload với GOP trong luồng live |
+| Network dynamics | Reward so R với B; benchmark có queue FIFO mô phỏng | RTT, loss, pacing và transport feedback thật |
 | State cho switch | Không có previous action | Cân nhắc bổ sung nếu cần quan sát đầy đủ |
-| Khởi động/mất dữ liệu | Warm-up 4 GOP trong simulation | Quy tắc reset history, sample thiếu và lỗi runtime |
-| Chọn policy | Best validation return | Baseline, latency budget và tiêu chí chất lượng thực tế |
-| Tổng quát hóa | Giữ lại trace, dùng chung video | Split video/cảnh/thiết bị độc lập |
-| Domain gap | Chưa đo VCU | Chạy encode liên tục, đo bitrate/chất lượng/ROI thực |
+| Khởi động/mất dữ liệu | Warm-up 4 GOP trong env và policy runtime | Quy tắc reset history khi mất mẫu mạng hoặc camera |
+| Chọn policy | Best validation return; benchmark có baseline | Latency budget và tiêu chí chất lượng triển khai |
+| Tổng quát hóa | Video và phiên trace train/validation/test riêng | Holdout cảnh/địa điểm/thiết bị độc lập và nhãn thật |
+| Domain gap | Có mã encode liên tục và comparison host trong `root/` | Kết quả board được xác minh, cùng provenance policy/detector |
 
-Một vòng runtime cần xây ngoài repo có thể theo thứ tự: thu frame → detector và ROI → lấy semantic theo định nghĩa đã thống nhất → lấy bốn bw đã hoàn tất và bitrate previous → gọi policy → đặt bitrate/ROI cho encoder tại biên GOP → đếm payload → thu feedback mạng → cập nhật state. Nếu có buffering để tính S[k], timestamp của bw và GOP phải theo lịch điều khiển thực, không đơn giản lấy chỉ số frame làm thời gian gửi.
+Runtime buffered cho clip đã có trong `root/`; vòng camera và feedback mạng trực tiếp cần thêm adapter. Thứ tự cần giữ là thu frame → detector và ROI → semantic GOP → bốn bw đã hoàn tất và bitrate previous → policy → đặt bitrate/ROI tại biên GOP → đếm payload → thu feedback mạng → cập nhật state. Nếu có buffering để tính S[k], timestamp của bw và GOP phải theo lịch điều khiển thực. Runtime thử nghiệm hiện dùng thời gian trace theo PTS, chưa thay thế việc đồng bộ với feedback mạng thật.
 
-Bộ benchmark mới đã bổ sung bitrate cố định, heuristic bw quá khứ có/không ROI, oracle biết trước trace, chất lượng non-ROI, detector agreement và stress outage/switch bandwidth. Các việc vẫn cần bổ sung gồm tách video test độc lập, thay reward có kiểm soát, đo latency runtime và encode liên tục trên VCU thật. Xem [BENCHMARK.md](BENCHMARK.md) để phân biệt phép đo với mô hình hàng đợi mô phỏng.
+Bộ benchmark mới đã bổ sung CBR/VBR mô phỏng, oracle biết trước trace, chất lượng non-ROI, detector agreement và stress outage/switch bandwidth. Video đã được chia train/validation/test riêng theo manifest; phần cần thêm để kiểm tra tổng quát hóa là test trên cảnh quay, địa điểm hoặc thiết bị độc lập. Các việc khác gồm thay reward có kiểm soát, đo latency runtime và encode liên tục trên VCU thật. Xem [BENCHMARK.md](BENCHMARK.md) để phân biệt phép đo với mô hình hàng đợi mô phỏng.
 
-## 19. Bản đồ mã nguồn để tự đọc tiếp
+## 19. Bộ runtime ZCU106 trong `root/`
+
+Đây là bộ thử nghiệm có mã riêng, hướng dẫn ở [root/README.md](../root/README.md). `root/rl_runtime/board.py` đọc clip NV12 từ DDR, buffer GOP, chạy Multi-Scaler V4L2, preprocessing ARM/OpenCV, VART/DPU và `omxh264enc` qua GStreamer. ROI truyền bằng `GstVideoRegionOfInterestMeta` với `roi-by-value/omx-alg:delta-qp`; bitrate được cập nhật khi encoder đang PLAYING. Output gồm bitstream, detections, state/action, feedback bitrate và timing. Preflight kiểm dependency/contract, smoke và warm-up thực hiện thử phần cứng; chỉ có mã kiểm tra chưa đủ để kết luận board đã chạy thành công.
+
+Manifest hiện chọn 32 giây đầu của `bdd_114af10f-c3d93b85`, thuộc split test: 960 frame NV12 1080p30, khoảng 2,986 GB raw, cùng 32 mẫu trace FCC test tại offset 0. Đường preprocessing hiện được khóa: scaler RGB 1280×720 → ARM resize 640×360 → letterbox 640×640, pad 114 và 140 pixel trên/dưới → DPU INT8. Đây là preprocessing khác đường AutoShape của dataset; manifest ghi `weights_equivalence_verified=false`, nên chưa thể quy mọi chênh lệch detector cho lượng tử hóa INT8.
+
+| Strategy trên board | Cấu hình |
+|---|---|
+| CBR | 1,5 Mbps, control-rate constant, không ROI |
+| VBR | 1,5 Mbps, control-rate variable, không ROI |
+| Fixed ROI | 1,5 Mbps, variable, ROI delta −6 |
+| RL | Policy chọn bitrate/delta theo GOP; bốn GOP đầu action 4 |
+
+Baseline board được khóa ở 1,5 Mbps; baseline CBR/VBR trong benchmark surrogate được chọn trên validation. Hai bộ có phương pháp và phạm vi riêng. Runtime board có chế độ paced 30 Hz và throughput không sleep; trace luôn theo PTS. Bảng chính của comparison tính GOP 4–31. Board ghi dữ liệu; VMAF, ROI SSIM và reward được tính sau trên host bằng `root/tools/compare_results.py`.
+
+**Policy/reward của bundle hiện tại:** `root/manifest.json` ghi policy nguồn `reports/benchmark/legacy_artifacts/rl/ddqn_selected.npz`, `trial=true` và `dataset_sha256=null`. Không được xem policy bundle là checkpoint FCC/BDD seed 13 bước 110.000 nêu ở mục 13. `root/tools/host_metrics.py` là snapshot riêng, dùng violation bình phương với weight 0,2, utilization weight 0,05 và switching weight 0,05 theo manifest; reward đó khác công thức hiện tại của `src/vcu_surrogate/rl_env.py` ở mục 10. Khi đổi bundle phải cập nhật policy, metadata, snapshot hàm và manifest nhất quán.
+
+`root/tools/offline_reference.py` cung cấp đối chiếu host bằng detector FP32 CUDA và encoder x264 liên tục: action đổi mỗi GOP và feedback dùng bitrate vừa encode. Đường này khác grid action cố định và video ghép GOP của pipeline train. `replay_policy.py` dùng golden state/Q-value để kiểm riêng suy luận policy; `compare_results.py` so chất lượng/action/timing của các kết quả được cung cấp. Chạy theo hướng dẫn của bộ `root/` và xác minh manifest/file hash trước khi coi bundle dùng được.
+
+## 20. Bản đồ mã nguồn để tự đọc tiếp
 
 | File | Trách nhiệm |
 |---|---|
@@ -609,9 +592,13 @@ Bộ benchmark mới đã bổ sung bitrate cố định, heuristic bw quá kh�
 | `src/vcu_surrogate/validation.py` | Kiểm dependency và tính nhất quán dataset |
 | `src/vcu_surrogate/benchmark.py`, `benchmark_metrics.py` | Benchmark bốn nhóm metric, baseline, oracle, queue và báo cáo |
 | `src/vcu_surrogate/cli.py` | Subcommand và luồng chạy tuần tự |
+| `scripts/run_fcc_bdd.py`, `prepare_grid_compact.py` | Runner có trạng thái, cache reference chung và xử lý từng video |
+| `root/rl_runtime/` | Runtime board, DPU, contract và policy NumPy của bundle |
+| `root/tools/` | Đóng gói, preflight/replay, offline reference và comparison host |
+| `root/manifest.json` | Clip/trace/model/policy/reward và hash của bundle thử nghiệm |
 | `docker/Dockerfile`, `Makefile` | Build môi trường và lệnh chạy |
 | `tests/` | Unit/integration test các contract chính |
-| `reports/` | Kết quả validation, learning, evaluation đã lưu |
-| `data/raw/mahimahi/` | Checkout upstream làm nguồn trace, không phải thuật toán RL tự viết |
+| `reports/fcc_bdd/` | Kết quả validation, learning, evaluation và benchmark hiện tại |
+| `data/raw/fcc_bdd/network_traces/` | Checkout upstream làm nguồn trace, không phải thuật toán RL tự viết |
 
-Để hiểu đường đi một quyết định cụ thể, bắt đầu từ `OfflineGOPEnv._raw_state()` → `NumpyPolicy.act()` hoặc `_greedy()` → `OfflineGOPEnv.step()` → `GridDataset.row()` → `reward_for()`. Để hiểu bw, bắt đầu từ `LTE_UPLINK_FILES` → `parse_mahimahi_trace()` → `packet_timestamps_to_bandwidth()` → `trace_by_split` → history trong `_raw_state()`.
+Để hiểu đường đi một quyết định cụ thể, bắt đầu từ `OfflineGOPEnv._raw_state()` → `NumpyPolicy.act()` hoặc `_greedy()` → `OfflineGOPEnv.step()` → `GridDataset.row()` → `reward_for()`. Để hiểu bw, bắt đầu từ `trace_sources.json` → `parse_throughput_trace()` → `throughput_to_bandwidth()` → `trace_by_split` → history trong `_raw_state()`.

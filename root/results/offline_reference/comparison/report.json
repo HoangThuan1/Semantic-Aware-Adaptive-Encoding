@@ -1,0 +1,11 @@
+{
+  "status": "validated_offline_only",
+  "board_run_verified": false,
+  "runs": 4,
+  "quality_sample_stride": 5,
+  "main_window": "GOP 4..31",
+  "policy_trial": true,
+  "weights_equivalence_verified": false,
+  "detector_labels": "FP32 pseudo labels, not human ground truth",
+  "network_metrics": "fluid replay of prerecorded BW, not real network transmission"
+}
